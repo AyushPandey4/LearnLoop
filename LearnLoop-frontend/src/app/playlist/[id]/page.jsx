@@ -328,11 +328,12 @@ export default function PlaylistPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-900">
         <Navbar />
-        <div className="container mx-auto max-w-7xl px-4 py-16">
-          <div className="flex justify-center items-center h-64">
+        <div className="container mx-auto max-w-7xl px-4 py-12">
+          <div className="flex flex-col items-center justify-center h-[60vh]">
             <LoadingSpinner size="lg" />
+            <p className="mt-4 text-gray-400 animate-pulse">Loading playlist...</p>
           </div>
         </div>
       </div>
@@ -341,18 +342,28 @@ export default function PlaylistPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-900">
         <Navbar />
         <div className="container mx-auto max-w-7xl px-4 py-16">
-          <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Error</h2>
-            <p className="text-gray-700 dark:text-gray-300">{error}</p>
-            <button 
-              onClick={() => router.push('/dashboard')} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Return to Dashboard
-            </button>
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-red-500/20 shadow-xl rounded-xl p-8 max-w-2xl mx-auto">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-red-500 mb-3">Error Loading Playlist</h2>
+              <p className="text-gray-300 mb-6">{error}</p>
+              <button 
+                onClick={() => router.push('/dashboard')} 
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Return to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -361,18 +372,28 @@ export default function PlaylistPage() {
 
   if (!playlist) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-900">
         <Navbar />
         <div className="container mx-auto max-w-7xl px-4 py-16">
-          <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Playlist Not Found</h2>
-            <p className="text-gray-600 dark:text-gray-400">The playlist you're looking for doesn't exist or you don't have access to it.</p>
-            <button 
-              onClick={() => router.push('/dashboard')} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Return to Dashboard
-            </button>
+          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-xl rounded-xl p-8 max-w-2xl mx-auto">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-200 mb-3">Playlist Not Found</h2>
+              <p className="text-gray-400 mb-6">The playlist you're looking for doesn't exist or you don't have access to it.</p>
+              <button 
+                onClick={() => router.push('/dashboard')} 
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                </svg>
+                Return to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -380,123 +401,148 @@ export default function PlaylistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-900">
       <Navbar />
       <div className="container mx-auto max-w-7xl px-4 py-8">
         {/* Playlist Header Component */}
-        <PlaylistHeader 
-          playlist={playlist} 
-          onMarkAllComplete={markAllAsComplete} 
-          onAddVideo={handleAddVideo}
-        />
+        <div className="mb-8">
+          <PlaylistHeader 
+            playlist={playlist} 
+            onMarkAllComplete={markAllAsComplete} 
+            onAddVideo={handleAddVideo}
+          />
+        </div>
         
-        {/* Tab navigation for videos - only show if there are videos to rewatch */}
+        {/* Tab navigation for videos - Enhanced UI */}
         {hasRewatchVideos && (
-          <div className="mb-6 flex border-b border-gray-200 dark:border-gray-700">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                activeTab === 'all' 
-                  ? 'border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-500' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              All Videos ({playlist.videos.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('rewatch')}
-              className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                activeTab === 'rewatch' 
-                  ? 'border-purple-600 text-purple-600 dark:border-purple-500 dark:text-purple-500' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-              }`}
-            >
-              To Rewatch ({playlist.videos.filter(v => v.status === 'rewatch').length})
-            </button>
+          <div className="mb-8">
+            <div className="flex gap-4 p-1 bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 w-fit">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`py-2.5 px-6 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === 'all' 
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z" />
+                  </svg>
+                  All Videos
+                  <span className="bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
+                    {playlist.videos.length}
+                  </span>
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('rewatch')}
+                className={`py-2.5 px-6 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  activeTab === 'rewatch' 
+                    ? 'bg-purple-600 text-white shadow-lg' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                  </svg>
+                  To Rewatch
+                  <span className="bg-gray-700/50 px-2 py-0.5 rounded-full text-xs">
+                    {playlist.videos.filter(v => v.status === 'rewatch').length}
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
         )}
         
         {/* Show content based on active tab */}
-        {activeTab === 'rewatch' ? (
-          <RewatchSection 
-            videos={playlist.videos} 
-            onUpdateStatus={updateVideoStatus}
-            onTogglePin={handleTogglePin}
-          />
-        ) : (
-          <>
-            {/* Note about video ordering - only show for YouTube playlists */}
-            {playlist.ytPlaylistId && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-700 p-4 mb-6 rounded-sm">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Videos are displayed in the original order set by the playlist creator. 
-                      The numbers in the blue circles indicate each video's position.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Custom message for custom playlists */}
-            {playlist.isCustomPlaylist && playlist.videos && playlist.videos.length > 0 && (
-              <div className="bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-400 dark:border-indigo-700 p-4 mb-6 rounded-sm">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 dark:text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                      This is a custom playlist. You can drag and drop videos to customize their order.
-                    </p>
+        <div className="space-y-8">
+          {activeTab === 'rewatch' ? (
+            <RewatchSection 
+              videos={playlist.videos} 
+              onUpdateStatus={updateVideoStatus}
+              onTogglePin={handleTogglePin}
+            />
+          ) : (
+            <>
+              {/* Info Messages - Enhanced UI */}
+              {playlist.ytPlaylistId && (
+                <div className="bg-blue-900/20 backdrop-blur-sm border border-blue-500/20 rounded-xl p-6 transform hover:scale-[1.01] transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-400 mb-2">YouTube Playlist Order</h3>
+                      <p className="text-gray-300">
+                        Videos are displayed in the original order set by the playlist creator. 
+                        The numbers in the blue circles indicate each video's position.
+                      </p>
+                    </div>
                   </div>
                 </div>
+              )}
+              
+              {playlist.isCustomPlaylist && playlist.videos && playlist.videos.length > 0 && (
+                <div className="bg-indigo-900/20 backdrop-blur-sm border border-indigo-500/20 rounded-xl p-6 transform hover:scale-[1.01] transition-all duration-300">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-indigo-400 mb-2">Custom Playlist</h3>
+                      <p className="text-gray-300">
+                        This is a custom playlist. You can drag and drop videos to customize their order.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Video List Component - Enhanced Container */}
+              <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-xl overflow-hidden shadow-xl">
+                {playlist.isCustomPlaylist ? (
+                  <DraggableVideoList 
+                    videos={playlist.videos} 
+                    onUpdateStatus={updateVideoStatus}
+                    onUpdateNote={updateVideoNote}
+                    onUpdateTimeSpent={updateTimeSpent}
+                    onGenerateAiSummary={generateAiSummary}
+                    onCopySummaryToNote={copySummaryToNote}
+                    onStartTracking={handleStartTracking}
+                    onStopTracking={handleStopTracking}
+                    activeTrackingId={activeTrackingId}
+                    onTagsUpdate={handleUpdateTags}
+                    onTogglePin={handleTogglePin}
+                    onReorder={handleReorderVideos}
+                    isCustomPlaylist={true}
+                  />
+                ) : (
+                  <VideoList 
+                    videos={playlist.videos} 
+                    onUpdateStatus={updateVideoStatus}
+                    onUpdateNote={updateVideoNote}
+                    onUpdateTimeSpent={updateTimeSpent}
+                    onGenerateAiSummary={generateAiSummary}
+                    onCopySummaryToNote={copySummaryToNote}
+                    onStartTracking={handleStartTracking}
+                    onStopTracking={handleStopTracking}
+                    activeTrackingId={activeTrackingId}
+                    onTagsUpdate={handleUpdateTags}
+                    onTogglePin={handleTogglePin}
+                  />
+                )}
               </div>
-            )}
-            
-            {/* Video List Component - Use DraggableVideoList for custom playlists */}
-            {playlist.isCustomPlaylist ? (
-              <DraggableVideoList 
-                videos={playlist.videos} 
-                onUpdateStatus={updateVideoStatus}
-                onUpdateNote={updateVideoNote}
-                onUpdateTimeSpent={updateTimeSpent}
-                onGenerateAiSummary={generateAiSummary}
-                onCopySummaryToNote={copySummaryToNote}
-                onStartTracking={handleStartTracking}
-                onStopTracking={handleStopTracking}
-                activeTrackingId={activeTrackingId}
-                onTagsUpdate={handleUpdateTags}
-                onTogglePin={handleTogglePin}
-                onReorder={handleReorderVideos}
-                isCustomPlaylist={true}
-              />
-            ) : (
-        <VideoList 
-          videos={playlist.videos} 
-          onUpdateStatus={updateVideoStatus}
-          onUpdateNote={updateVideoNote}
-          onUpdateTimeSpent={updateTimeSpent}
-          onGenerateAiSummary={generateAiSummary}
-          onCopySummaryToNote={copySummaryToNote}
-                onStartTracking={handleStartTracking}
-                onStopTracking={handleStopTracking}
-                activeTrackingId={activeTrackingId}
-                onTagsUpdate={handleUpdateTags}
-                onTogglePin={handleTogglePin}
-        />
-            )}
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

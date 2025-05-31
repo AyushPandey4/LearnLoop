@@ -51,6 +51,70 @@ export default function PlaylistHeader({ playlist, onMarkAllComplete, onAddVideo
     return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
   };
   
+  // Calculate total duration in minutes
+  const calculateTotalDuration = () => {
+    if (!playlist.videos || playlist.videos.length === 0) return 0;
+    
+    return playlist.videos.reduce((total, video) => {
+      if (!video.duration) return total;
+      
+      // Parse ISO 8601 duration
+      const match = video.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return total;
+      
+      const hours = parseInt(match[1] || 0);
+      const minutes = parseInt(match[2] || 0);
+      const seconds = parseInt(match[3] || 0);
+      
+      return total + (hours * 60) + minutes + (seconds / 60);
+    }, 0);
+  };
+  
+  // Calculate remaining duration in minutes
+  const calculateRemainingDuration = () => {
+    if (!playlist.videos || playlist.videos.length === 0) return 0;
+    
+    return playlist.videos
+      .filter(video => video.status !== 'completed')
+      .reduce((total, video) => {
+        if (!video.duration) return total;
+        
+        // Parse ISO 8601 duration
+        const match = video.duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return total;
+        
+        const hours = parseInt(match[1] || 0);
+        const minutes = parseInt(match[2] || 0);
+        const seconds = parseInt(match[3] || 0);
+        
+        return total + (hours * 60) + minutes + (seconds / 60);
+      }, 0);
+  };
+  
+  // Calculate durations at different speeds
+  const calculateDurations = () => {
+    const totalMinutes = calculateTotalDuration();
+    const remainingMinutes = calculateRemainingDuration();
+    
+    return {
+      duration: {
+        normal: formatTimeSpent(Math.ceil(totalMinutes)),
+        x1_5: formatTimeSpent(Math.ceil(totalMinutes / 1.5)),
+        x1_75: formatTimeSpent(Math.ceil(totalMinutes / 1.75)),
+        x2: formatTimeSpent(Math.ceil(totalMinutes / 2))
+      },
+      estimatedTimeLeft: {
+        minutes: remainingMinutes,
+        formatted: formatTimeSpent(Math.ceil(remainingMinutes)),
+        x1_5: formatTimeSpent(Math.ceil(remainingMinutes / 1.5)),
+        x1_75: formatTimeSpent(Math.ceil(remainingMinutes / 1.75)),
+        x2: formatTimeSpent(Math.ceil(remainingMinutes / 2))
+      }
+    };
+  };
+  
+  const { duration, estimatedTimeLeft } = calculateDurations();
+  
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -320,329 +384,411 @@ export default function PlaylistHeader({ playlist, onMarkAllComplete, onAddVideo
   };
   
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
-      {/* Sync Notification */}
-      {showSyncNotification && (
-        <div className={`mb-4 p-3 rounded-md flex items-center justify-between ${
-          syncStatus.error 
-            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' 
-            : syncStatus.count > 0
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-        }`}>
-          <div className="flex items-center">
-            {syncStatus.loading ? (
-              <svg className="animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : syncStatus.error ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ) : syncStatus.count > 0 ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-            <span>{syncStatus.message}</span>
-          </div>
-          <button 
-            onClick={() => setShowSyncNotification(false)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+    <div className="relative overflow-hidden">
+      {/* Background gradient effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/20 dark:to-pink-900/20 blur-3xl"></div>
       
-      {/* Reset Notification */}
-      {resetNotification.show && (
-        <div className="mb-4 p-3 rounded-md flex items-center justify-between bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{resetNotification.message}</span>
-          </div>
-          <button 
-            onClick={() => setResetNotification({ show: false, message: '' })}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-      
-      <div className="flex flex-col lg:flex-row justify-between">
-        {/* Left side - Title and stats */}
-        <div className="mb-4 lg:mb-0">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">
-            {playlist.name}
-          </h1>
-          <div className="flex items-center flex-wrap gap-2 mb-2">
-            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              {playlist.category}
-              <button
-                onClick={() => setShowCategoryModal(true)}
-                className="ml-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                title="Edit category"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </button>
-            </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {playlist.totalVideos} videos
-            </span>
-            {ytInfo.channelTitle && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                • {ytInfo.channelTitle}
-              </span>
-            )}
-            {ytInfo.publishedAt && (
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                • Published {formatDate(ytInfo.publishedAt)}
-              </span>
-            )}
-          </div>
-          
-          {ytInfo.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">
-              {ytInfo.description}
-            </p>
-          )}
-          
-          {/* Duration info */}
-          {playlist.duration && (
-            <div className="mt-4">
-              <button 
-                onClick={() => setShowDurations(!showDurations)} 
-                className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Total Duration: {playlist.duration.normal}
-                <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ml-1 transition-transform duration-200 ${showDurations ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {showDurations && (
-                <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estimated Duration at Different Speeds:</h4>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                    <div className="flex items-center">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1x Speed:</span>
-                      <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.duration.normal}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1.5x Speed:</span>
-                      <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.duration.x1_5}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1.75x Speed:</span>
-                      <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.duration.x1_75}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400">2x Speed:</span>
-                      <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.duration.x2}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Estimated Time Left */}
-                  {playlist.estimatedTimeLeft && playlist.estimatedTimeLeft.minutes > 0 && (
-                    <div className="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
-                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                        </svg>
-                        Estimated Time Left:
-                      </h4>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1x Speed:</span>
-                          <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.estimatedTimeLeft.formatted}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1.5x Speed:</span>
-                          <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.estimatedTimeLeft.x1_5}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">1.75x Speed:</span>
-                          <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.estimatedTimeLeft.x1_75}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400">2x Speed:</span>
-                          <span className="ml-2 text-sm text-gray-800 dark:text-gray-200">{playlist.estimatedTimeLeft.x2}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {/* Right side - Action buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row items-stretch sm:items-start">
-          {/* Only show Add Video button for custom playlists */}
-          {playlist.isCustomPlaylist ? (
-            <button
-              onClick={() => setShowAddVideoModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-            >
-              Add Video
-            </button>
-          ) : (
-            <div className="relative group">
-              <button
-                disabled
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md text-sm font-medium cursor-not-allowed"
-              >
-                Add Video
-              </button>
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Videos can only be added to custom playlists
-              </div>
-            </div>
-          )}
-          
-          {/* Sync button for YouTube playlists */}
-          {!playlist.isCustomPlaylist && playlist.ytPlaylistId && (
-            <button
-              onClick={handleSyncWithYouTube}
-              disabled={syncStatus.loading}
-              className={`px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors ${
-                syncStatus.loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
+      {/* Main content with glass effect */}
+      <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-xl rounded-2xl p-8 border border-gray-200/50 dark:border-gray-700/50">
+        {/* Sync and Reset Notifications */}
+        {showSyncNotification && (
+          <div className={`mb-6 p-4 rounded-xl backdrop-blur-sm border transition-all duration-300 transform ${
+            syncStatus.error 
+              ? 'bg-red-100/90 dark:bg-red-900/30 border-red-200 dark:border-red-800/50 text-red-800 dark:text-red-300' 
+              : syncStatus.count > 0
+                ? 'bg-green-100/90 dark:bg-green-900/30 border-green-200 dark:border-green-800/50 text-green-800 dark:text-green-300'
+                : 'bg-blue-100/90 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50 text-blue-800 dark:text-blue-300'
+          } animate-fade-in`}>
+            <div className="flex items-center">
               {syncStatus.loading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Syncing...
-                </span>
-              ) : 'Sync with YouTube'}
-            </button>
-          )}
-        
-        <button
-          onClick={onMarkAllComplete}
-          className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
-        >
-          Mark All as Complete
-        </button>
-          
-          <button
-            onClick={() => setShowResetConfirmModal(true)}
-            disabled={isResetting}
-            className={`px-4 py-2 ${
-              isResetting ? 'bg-gray-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'
-            } text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center`}
-          >
-            {isResetting ? (
-              <>
-                <svg className="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Resetting...
-              </>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              ) : syncStatus.error ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Reset Progress
-              </>
+              ) : syncStatus.count > 0 ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              <span>{syncStatus.message}</span>
+            </div>
+            <button 
+              onClick={() => setShowSyncNotification(false)}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+        
+        {/* Reset Notification */}
+        {resetNotification.show && (
+          <div className="mb-6 p-4 rounded-xl bg-green-100/90 dark:bg-green-900/30 border border-green-200 dark:border-green-800/50 text-green-800 dark:text-green-300 backdrop-blur-sm transition-all duration-300 transform animate-fade-in">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{resetNotification.message}</span>
+            </div>
+            <button 
+              onClick={() => setResetNotification({ show: false, message: '' })}
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        <div className="flex flex-col lg:flex-row justify-between gap-8">
+          {/* Left side - Title and stats */}
+          <div className="flex-grow">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3 group">
+              {playlist.name}
+              <div className="h-1 w-0 group-hover:w-full bg-blue-500 transition-all duration-300 rounded-full"></div>
+            </h1>
+            
+            <div className="flex items-center flex-wrap gap-3 mb-4">
+              <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100/80 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800/50 backdrop-blur-sm transition-all duration-200 hover:bg-blue-200/80 dark:hover:bg-blue-800/50">
+                {playlist.category}
+                <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="ml-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+              </div>
+              
+              <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                {playlist.totalVideos} videos
+              </span>
+              
+              {ytInfo.channelTitle && (
+                <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                  {ytInfo.channelTitle}
+                </span>
+              )}
+              
+              {ytInfo.publishedAt && (
+                <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Published {formatDate(ytInfo.publishedAt)}
+                </span>
+              )}
+            </div>
+            
+            {ytInfo.description && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  {ytInfo.description}
+                </p>
+              </div>
             )}
-          </button>
-        </div>
-      </div>
-      
-      {/* Stats Row */}
-      <div className="bg-gray-50 dark:bg-gray-750 p-4">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center bg-white dark:bg-gray-700 px-3 py-2 rounded-md">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
-          </svg>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Videos</div>
-            <div className="font-semibold text-gray-800 dark:text-white">
-              {playlist.completedVideos}/{playlist.totalVideos} completed
+
+            {/* Duration info */}
+            <div className="mt-6">
+              <button 
+                onClick={() => setShowDurations(!showDurations)} 
+                className="group flex items-center gap-3 w-full px-4 py-3 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all duration-200"
+              >
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Playlist Duration</div>
+                  <div className="text-lg font-bold text-gray-900 dark:text-white">{duration.normal}</div>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">View all speeds</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-blue-600 dark:text-blue-400 transition-transform duration-200 ${showDurations ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </button>
+              
+              {showDurations && (
+                <div className="mt-3 p-6 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 transition-all duration-300 hover:shadow-lg">
+                  {/* Duration sections side by side */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Total Duration Section */}
+                    <div>
+                      <h4 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Total Watch Time
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="flex flex-col p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Normal (1x)</span>
+                          <span className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-1">{duration.normal}</span>
+                        </div>
+                        <div className="flex flex-col p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
+                          <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Fast (1.5x)</span>
+                          <span className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 mt-1">{duration.x1_5}</span>
+                        </div>
+                        <div className="flex flex-col p-4 bg-violet-50 dark:bg-violet-900/20 rounded-xl border border-violet-100 dark:border-violet-800/50">
+                          <span className="text-sm font-medium text-violet-600 dark:text-violet-400">Faster (1.75x)</span>
+                          <span className="text-2xl font-bold text-violet-700 dark:text-violet-300 mt-1">{duration.x1_75}</span>
+                        </div>
+                        <div className="flex flex-col p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                          <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Fastest (2x)</span>
+                          <span className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-1">{duration.x2}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estimated Time Left Section */}
+                    {estimatedTimeLeft.minutes > 0 && (
+                      <div>
+                        <h4 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white mb-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                          Remaining Time
+                        </h4>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="flex flex-col p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Normal (1x)</span>
+                            <span className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-1">{estimatedTimeLeft.formatted}</span>
+                          </div>
+                          <div className="flex flex-col p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/50">
+                            <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Fast (1.5x)</span>
+                            <span className="text-2xl font-bold text-orange-700 dark:text-orange-300 mt-1">{estimatedTimeLeft.x1_5}</span>
+                          </div>
+                          <div className="flex flex-col p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-100 dark:border-rose-800/50">
+                            <span className="text-sm font-medium text-rose-600 dark:text-rose-400">Faster (1.75x)</span>
+                            <span className="text-2xl font-bold text-rose-700 dark:text-rose-300 mt-1">{estimatedTimeLeft.x1_75}</span>
+                          </div>
+                          <div className="flex flex-col p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-800/50">
+                            <span className="text-sm font-medium text-red-600 dark:text-red-400">Fastest (2x)</span>
+                            <span className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">{estimatedTimeLeft.x2}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-        
-          <div className="flex items-center bg-white dark:bg-gray-700 px-3 py-2 rounded-md">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-green-600 dark:text-green-400 mr-2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Time Spent</div>
-              <div className="font-semibold text-gray-800 dark:text-white">{formatTimeSpent(totalTimeSpent)}</div>
+          
+          {/* Right side - Action buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-3">
+            {playlist.isCustomPlaylist ? (
+              <button
+                onClick={() => setShowAddVideoModal(true)}
+                className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2 backdrop-blur-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Video
+              </button>
+            ) : (
+              <div className="relative group">
+                <button
+                  disabled
+                  className="px-4 py-2.5 bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl text-sm font-medium cursor-not-allowed transition-all duration-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Video
+                </button>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Videos can only be added to custom playlists
+                </div>
+              </div>
+            )}
+            
+            {/* Sync button for YouTube playlists */}
+            {!playlist.isCustomPlaylist && playlist.ytPlaylistId && (
+              <button
+                onClick={handleSyncWithYouTube}
+                disabled={syncStatus.loading}
+                className={`px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2 backdrop-blur-sm ${
+                  syncStatus.loading ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
+              >
+                {syncStatus.loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Syncing...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span>Sync with YouTube</span>
+                  </>
+                )}
+              </button>
+            )}
+            
+            <button
+              onClick={onMarkAllComplete}
+              className="px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2 backdrop-blur-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Mark All Complete
+            </button>
+            
+            <button
+              onClick={() => setShowResetConfirmModal(true)}
+              disabled={isResetting}
+              className={`px-4 py-2.5 ${
+                isResetting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-amber-500 hover:bg-amber-600'
+              } text-white rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg flex items-center justify-center gap-2 backdrop-blur-sm`}
+            >
+              {isResetting ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Resetting...</span>
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Reset Progress</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
         
-          <div className="flex items-center bg-white dark:bg-gray-700 px-3 py-2 rounded-md">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-          </svg>
-          <div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Notes</div>
-            <div className="font-semibold text-gray-800 dark:text-white">{totalNotes} videos with notes</div>
+        {/* Stats Row */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50 transition-all duration-200 hover:transform hover:scale-105 hover:shadow-lg">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Videos Completed</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {playlist.completedVideos}/{playlist.totalVideos}
+                </p>
+              </div>
+            </div>
           </div>
+          
+          <div className="bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50 transition-all duration-200 hover:transform hover:scale-105 hover:shadow-lg">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Time Spent</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {formatTimeSpent(totalTimeSpent)}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50 transition-all duration-200 hover:transform hover:scale-105 hover:shadow-lg">
+            <div className="flex items-center">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg mr-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Notes Created</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">
+                  {totalNotes}
+                </p>
+              </div>
+            </div>
           </div>
           
           <a
             href={playlist.ytPlaylistUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center bg-white dark:bg-gray-700 px-3 py-2 rounded-md text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+            className="bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50 transition-all duration-200 hover:transform hover:scale-105 hover:shadow-lg group"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-2">
-              <path d="M21.593 7.203a2.506 2.506 0 00-1.762-1.766C18.265 5.007 12 5 12 5s-6.264-.007-7.831.404a2.56 2.56 0 00-1.766 1.778c-.413 1.566-.417 4.814-.417 4.814s-.004 3.264.406 4.814c.23.857.905 1.534 1.763 1.765 1.582.43 7.83.437 7.83.437s6.265.007 7.831-.403a2.515 2.515 0 001.767-1.763c.414-1.565.417-4.812.417-4.812s.02-3.265-.407-4.831zM9.996 15.005l.005-6 5.207 3.005-5.212 2.995z" />
-            </svg>
-            <span className="font-medium">View on YouTube</span>
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg mr-4 group-hover:bg-red-200 dark:group-hover:bg-red-800/50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-red-600 dark:text-red-400">
+                  <path d="M21.593 7.203a2.506 2.506 0 00-1.762-1.766C18.265 5.007 12 5 12 5s-6.264-.007-7.831.404a2.56 2.56 0 00-1.766 1.778c-.413 1.566-.417 4.814-.417 4.814s-.004 3.264.406 4.814c.23.857.905 1.534 1.763 1.765 1.582.43 7.83.437 7.83.437s6.265.007 7.831-.403a2.515 2.515 0 001.767-1.763c.414-1.565.417-4.812.417-4.812s.02-3.265-.407-4.831zM9.996 15.005l.005-6 5.207 3.005-5.212 2.995z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">View on</p>
+                <p className="text-xl font-bold text-red-600 dark:text-red-400 group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">
+                  YouTube
+                </p>
+              </div>
+            </div>
           </a>
         </div>
-      </div>
-      
-      {/* Progress Bar */}
-      <div className="px-5 py-3">
-      <div className="mb-1 flex justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{playlist.progress}%</span>
-      </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-1">
-        <div
-          className={`h-2.5 rounded-full ${
-            playlist.progress === 100 ? 'bg-green-600' : 'bg-blue-600'
-          }`}
-          style={{ width: `${playlist.progress}%` }}
-        ></div>
-      </div>
+        
+        {/* Progress Bar */}
+        <div className="mt-8">
+          <div className="mb-2 flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{playlist.progress}%</span>
+          </div>
+          <div className="relative h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className={`absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full ${
+                playlist.progress === 100 
+                  ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+              }`}
+              style={{ width: `${playlist.progress}%` }}
+            >
+              <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Add Video Modal */}
       {showAddVideoModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative overflow-hidden transform transition-all duration-300 scale-100 opacity-100">
             <button
               onClick={() => setShowAddVideoModal(false)}
               className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -707,10 +853,10 @@ export default function PlaylistHeader({ playlist, onMarkAllComplete, onAddVideo
         </div>
       )}
       
-      {/* Reset Confirmation Modal */}
+      {/* Reset Confirm Modal */}
       {showResetConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative overflow-hidden transform transition-all duration-300 scale-100 opacity-100">
             <button
               onClick={() => setShowResetConfirmModal(false)}
               className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -749,8 +895,8 @@ export default function PlaylistHeader({ playlist, onMarkAllComplete, onAddVideo
       
       {/* Category Change Modal */}
       {showCategoryModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative overflow-hidden transform transition-all duration-300 scale-100 opacity-100">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Change Category
             </h3>

@@ -1,47 +1,25 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-    const [darkMode, setDarkMode] = useState(false);
-
+    // Always use dark mode
     useEffect(() => {
-        // Check for saved theme or system preference on mount
         if (typeof window !== 'undefined') {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
-            setDarkMode(isDark);
-            
-            // Apply theme to document
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
         }
     }, []);
 
-    // Apply theme whenever darkMode changes
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, [darkMode]);
-
+    // Provide a dummy toggle function that does nothing
     const toggleDarkMode = () => {
-        const newDarkMode = !darkMode;
-        setDarkMode(newDarkMode);
-        localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+        // Do nothing since we're always in dark mode
     };
 
     return (
-        <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
+        <ThemeContext.Provider value={{ darkMode: true, toggleDarkMode }}>
             {children}
         </ThemeContext.Provider>
     );

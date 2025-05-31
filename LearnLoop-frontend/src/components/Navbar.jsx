@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
@@ -11,7 +10,7 @@ export default function Navbar() {
     const [showProfile, setShowProfile] = useState(false);
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const { user, loading, login, logout } = useAuth();
-    const { darkMode, toggleDarkMode } = useTheme();
+    
     const pathname = usePathname();
     
     // Hide navbar on dashboard pages
@@ -62,7 +61,7 @@ export default function Navbar() {
     }, [pathname, isDashboard]);
     
     // Don't render content if on dashboard
-    if (isDashboard) return null;
+    // if (isDashboard) return null;
 
     const handleSignOut = () => {
         logout();
@@ -78,12 +77,12 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm z-50">
+        <nav className={`fixed top-0 left-0 right-0 bg-gray-900/95 border-gray-800/80 backdrop-blur-sm border-b shadow-sm z-50 transition-colors duration-200`}>
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <div className="flex items-center space-x-8">
-                        <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 dark:from-blue-400 dark:via-blue-300 dark:to-indigo-400 bg-clip-text text-transparent font-display">
                             <Link href="/">LearnLoop</Link>
                         </h1>
                         
@@ -92,40 +91,40 @@ export default function Navbar() {
                             <div className="hidden md:flex space-x-4">
                                 <Link 
                                     href="/dashboard" 
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                                         isActivePath('/dashboard')
-                                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            ? 'bg-blue-50/80 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                                     }`}
                                 >
                                     Dashboard
                                 </Link>
                                 <Link 
                                     href="/badges" 
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                                         isActivePath('/badges')
-                                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            ? 'bg-blue-50/80 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                                     }`}
                                 >
                                     Badges
                                 </Link>
                                 <Link 
                                     href="/tags-search" 
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                                         isActivePath('/tags-search')
-                                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            ? 'bg-blue-50/80 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                                     }`}
                                 >
                                     Search by Tags
                                 </Link>
                                 <Link 
                                     href="/notes-search" 
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                                         isActivePath('/notes-search')
-                                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                            ? 'bg-blue-50/80 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
                                     }`}
                                 >
                                     Search Notes
@@ -136,23 +135,6 @@ export default function Navbar() {
 
                     {/* Right side buttons */}
                     <div className="flex items-center space-x-4">
-                        {/* Dark mode toggle */}
-                        <button
-                            onClick={toggleDarkMode}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            aria-label="Toggle dark mode"
-                        >
-                            {darkMode ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-                                </svg>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                                </svg>
-                            )}
-                        </button>
-
                         {/* Authentication buttons */}
                         {loading ? (
                             <div className="animate-spin h-5 w-5 text-blue-500" />
@@ -160,7 +142,7 @@ export default function Navbar() {
                             <button
                                 onClick={handleGoogleLogin}
                                 disabled={isLoggingIn}
-                                className="flex items-center px-4 py-2 bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                className="flex items-center px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all duration-200 bg-gradient-to-r from-blue-500 to-blue-400 hover:from-blue-600 hover:to-blue-500 text-white"
                             >
                                 {isLoggingIn ? "Signing in..." : "Sign in with Google"}
                             </button>
@@ -173,56 +155,56 @@ export default function Navbar() {
                                     <img
                                         src={user.avatar}
                                         alt="Profile"
-                                        className="w-8 h-8 rounded-full border-2 border-transparent hover:border-blue-500 transition-colors"
+                                        className="w-8 h-8 rounded-full ring-2 ring-gray-800 hover:ring-blue-400 transition-all duration-200"
                                     />
                                 </button>
 
                                 {showProfile && (
-                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 border border-gray-200 dark:border-gray-700">
+                                    <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg py-2 border backdrop-blur-sm bg-gray-800/90 border-gray-700/80">
                                         <div className="px-4 py-2">
-                                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                            <p className="text-sm font-medium text-white">
                                                 {user.name}
                                             </p>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                            <p className="text-sm text-gray-400 truncate">
                                                 {user.email}
                                             </p>
                                         </div>
-                                        <div className="border-t border-gray-200 dark:border-gray-700">
+                                        <div className="border-t border-gray-200 dark:border-gray-700/80">
                                             {/* Mobile nav links */}
                                             <div className="md:hidden">
                                                 <Link 
                                                     href="/dashboard" 
-                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                     onClick={() => setShowProfile(false)}
                                                 >
                                                     Dashboard
                                                 </Link>
                                                 <Link 
                                                     href="/badges" 
-                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                     onClick={() => setShowProfile(false)}
                                                 >
                                                     Badges
                                                 </Link>
                                                 <Link 
                                                     href="/tags-search" 
-                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                     onClick={() => setShowProfile(false)}
                                                 >
                                                     Search by Tags
                                                 </Link>
                                                 <Link 
                                                     href="/notes-search" 
-                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                     onClick={() => setShowProfile(false)}
                                                 >
                                                     Search Notes
                                                 </Link>
-                                                <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                                <div className="border-t border-gray-200 dark:border-gray-700/80 my-1"></div>
                                             </div>
                                             <button
                                                 onClick={handleSignOut}
-                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                             >
                                                 Sign out
                                             </button>

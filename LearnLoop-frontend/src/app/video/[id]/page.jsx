@@ -22,6 +22,7 @@ export default function VideoPage() {
   const [timeSpent, setTimeSpent] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [timerInterval, setTimerInterval] = useState(null);
+  const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryError, setSummaryError] = useState('');
   const [noteSaved, setNoteSaved] = useState(true);
@@ -92,14 +93,44 @@ export default function VideoPage() {
     return () => clearTimeout(saveTimeout);
   }, [note, noteSaved]);
 
+  // Format time display (MM:SS or HH:MM:SS)
+  const formatTimeDisplay = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Format minutes for display (e.g., "2h 30m")
+  const formatMinutes = (minutes) => {
+    if (!minutes) return '0 min';
+    
+    if (minutes < 60) return `${minutes} min`;
+    
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+  };
+
   // Timer effect for tracking time spent
   useEffect(() => {
     if (timerActive && !timerInterval) {
+      // Set start time when timer is activated
       startTimeRef.current = Date.now();
+      setCurrentSessionTime(0);
       
       const interval = setInterval(() => {
-        const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        const totalSeconds = accumulatedTimeRef.current + elapsedSeconds;
+        const currentTime = Date.now();
+        const sessionSeconds = Math.floor((currentTime - startTimeRef.current) / 1000);
+        setCurrentSessionTime(sessionSeconds);
+        
+        const totalSeconds = accumulatedTimeRef.current + sessionSeconds;
         const totalMinutes = Math.floor(totalSeconds / 60);
         setTimeSpent(totalMinutes);
       }, 1000);
@@ -109,10 +140,11 @@ export default function VideoPage() {
       clearInterval(timerInterval);
       setTimerInterval(null);
       
-      // Calculate time spent and update accumulated time
+      // Calculate and save time spent when timer stops
       if (startTimeRef.current) {
         const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
         accumulatedTimeRef.current += elapsedSeconds;
+        setCurrentSessionTime(0);
         
         // Update timeSpent in database
         saveTimeSpent();
@@ -170,10 +202,7 @@ export default function VideoPage() {
     } catch (err) {
       console.error('Error saving time spent:', err);
     } finally {
-      // Set timeout to show "Saved" feedback for a short time
-      setTimeout(() => {
-        setTimeSaving(false);
-      }, 1500);
+      setTimeSaving(false);
     }
   };
 
@@ -259,31 +288,6 @@ export default function VideoPage() {
     } catch (err) {
       console.error('Error copying summary to notes:', err);
     }
-  };
-
-  // Format time display (MM:SS or HH:MM:SS)
-  const formatTimeDisplay = (totalSeconds) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Format minutes for display (e.g., "2h 30m")
-  const formatMinutes = (minutes) => {
-    if (!minutes) return '0 min';
-    
-    if (minutes < 60) return `${minutes} min`;
-    
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    
-    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
   };
 
   // Get status badge color
@@ -473,7 +477,11 @@ export default function VideoPage() {
             )}
           </div>
           
-          <div className="flex flex-wrap items-center gap-3 mb-2">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+            {video.title}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-3">
             <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full flex items-center ${getStatusColor(video.status)}`}>
               <span className="mr-1">{getStatusIcon(video.status)}</span>
               {formatStatus(video.status)}
@@ -486,16 +494,13 @@ export default function VideoPage() {
               {formatMinutes(timeSpent)}
             </span>
           </div>
-          
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            {video.title}
-          </h1>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* YouTube Player */}
-          <div className="w-full lg:w-2/3">
-            <div className="bg-black rounded-lg overflow-hidden aspect-video mb-4">
+          {/* Main Content Area */}
+          <div className="w-full lg:w-2/3 space-y-6">
+            {/* YouTube Player */}
+            <div className="bg-black rounded-lg overflow-hidden aspect-video">
               {video ? (
                 <iframe
                   className="w-full h-full"
@@ -511,101 +516,111 @@ export default function VideoPage() {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="w-full lg:w-1/3 space-y-4">
-            {/* Status Selector */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
-                Status
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => updateStatus('to-watch')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-                    video.status === 'to-watch'
-                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white'
-                      : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  To Watch
-                </button>
-                <button
-                  onClick={() => updateStatus('in-progress')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-                    video.status === 'in-progress'
-                      ? 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                      : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  In Progress
-                </button>
-                <button
-                  onClick={() => updateStatus('completed')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-                    video.status === 'completed'
-                      ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200'
-                      : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Completed
-                </button>
-                <button
-                  onClick={() => updateStatus('rewatch')}
-                  className={`flex-1 px-3 py-2 rounded-md text-sm font-medium ${
-                    video.status === 'rewatch'
-                      ? 'bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                      : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Need to Rewatch
-                </button>
-              </div>
-            </div>
-
-            {/* Resources Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <ResourceManager 
-                videoId={video.id}
-                resources={video.resources || []}
-                onResourcesUpdate={handleResourcesUpdate}
-              />
-            </div>
-
-            {/* Time Tracker */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  Time Tracker
+            {/* Primary Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Status Selector */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                  Status
                 </h2>
-                <div className="text-xl font-mono">
-                  {formatTimeDisplay(Math.floor(accumulatedTimeRef.current) + (timerActive && startTimeRef.current ? Math.floor((Date.now() - startTimeRef.current) / 1000) : 0))}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => updateStatus('to-watch')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      video.status === 'to-watch'
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white'
+                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    To Watch
+                  </button>
+                  <button
+                    onClick={() => updateStatus('in-progress')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      video.status === 'in-progress'
+                        ? 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    onClick={() => updateStatus('completed')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      video.status === 'completed'
+                        ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200'
+                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Completed
+                  </button>
+                  <button
+                    onClick={() => updateStatus('rewatch')}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      video.status === 'rewatch'
+                        ? 'bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Need to Rewatch
+                  </button>
                 </div>
               </div>
-              <button
-                onClick={toggleTimer}
-                className={`w-full py-2 px-4 rounded-md font-medium ${
-                  timerActive
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
-              >
-                {timerActive ? 'Stop Timer' : 'Start Timer'}
-              </button>
-              <div className="flex justify-between items-center mt-2">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Total time spent: {formatMinutes(timeSpent)}
-                </p>
-                {timeSaving && (
-                  <span className="text-xs text-green-500 dark:text-green-400 animate-pulse">
-                    Saving time...
-                  </span>
-                )}
+
+              {/* Time Tracker */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    Time Tracker
+                  </h2>
+                  <div className="text-xl font-mono text-gray-800 dark:text-gray-200">
+                    {timerActive ? formatTimeDisplay(currentSessionTime) : '00:00'}
+                  </div>
+                </div>
+                <button
+                  onClick={toggleTimer}
+                  className={`w-full py-3 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                    timerActive
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {timerActive ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+                      </svg>
+                      Stop Timer
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                      </svg>
+                      Start Timer
+                    </>
+                  )}
+                </button>
+                <div className="flex justify-between items-center mt-3">
+                  <div className="flex flex-col">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Total time spent
+                    </p>
+                    <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      {formatMinutes(timeSpent)}
+                    </p>
+                  </div>
+                  {timeSaving && (
+                    <span className="text-sm text-green-500 dark:text-green-400 animate-pulse">
+                      Saving time...
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Notes */}
+            {/* Notes Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
@@ -626,7 +641,7 @@ export default function VideoPage() {
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
                   </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
                     {noteSaved ? 'Saved' : 'Saving...'}
                   </span>
                 </div>
@@ -635,11 +650,14 @@ export default function VideoPage() {
                 value={note}
                 onChange={handleNoteChange}
                 onBlur={saveNotes}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-gray-800 dark:text-gray-200 min-h-[150px]"
+                className="w-full p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md text-gray-800 dark:text-gray-200 min-h-[200px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 placeholder="Add your notes here..."
               ></textarea>
             </div>
+          </div>
 
+          {/* Sidebar */}
+          <div className="w-full lg:w-1/3 space-y-6">
             {/* AI Summary */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
               <div className="flex items-center justify-between mb-3">
@@ -649,15 +667,15 @@ export default function VideoPage() {
                 {video.aiSummaryGenerated ? (
                   <button
                     onClick={generateSummary}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-md text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-800"
+                    className="px-3 py-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-md text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-800 transition-all duration-200"
                   >
-                    Regenerate Summary
+                    Regenerate
                   </button>
                 ) : (
                   <button
                     onClick={generateSummary}
                     disabled={isGeneratingSummary}
-                    className={`px-3 py-1 rounded-md text-xs font-medium ${
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                       isGeneratingSummary
                         ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                         : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
@@ -679,37 +697,46 @@ export default function VideoPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  Summary successfully copied to notes!
+                  Summary copied to notes!
                 </div>
               )}
               
               {video.aiSummaryGenerated ? (
                 <>
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap mb-3">
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap mb-3 max-h-[300px] overflow-y-auto">
                     {video.aiSummary}
                   </div>
                   
                   <button
                     onClick={copySummaryToNotes}
-                    className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors flex items-center justify-center"
+                    className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
-                    Copy Summary to Notes
+                    Copy to Notes
                   </button>
                 </>
               ) : (
-                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 text-sm italic">
-                  No AI summary has been generated yet. Click the "Generate Summary" button to create one.
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 text-sm italic">
+                  No AI summary generated yet. Click "Generate Summary" to create one.
                 </div>
               )}
             </div>
 
+            {/* Resources Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <ResourceManager 
+                videoId={video.id}
+                resources={video.resources || []}
+                onResourcesUpdate={handleResourcesUpdate}
+              />
+            </div>
+
             {/* Tags */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Tags</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Tags</h2>
               <TagManager 
                 videoId={video.id} 
                 initialTags={tags} 
