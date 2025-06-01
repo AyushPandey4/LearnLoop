@@ -1,3 +1,13 @@
+/**
+ * Playlist Management Routes
+ * This module handles all playlist-related operations including:
+ * - YouTube playlist import and synchronization
+ * - Custom playlist creation and management
+ * - Video organization and ordering
+ * - Playlist statistics and progress tracking
+ * - Cache management for playlist data
+ */
+
 const express = require('express');
 const router = express.Router();
 const { google } = require('googleapis');
@@ -8,22 +18,23 @@ const Video = require('../models/Video');
 const { setCache, getCache, deleteCache } = require('../config/redisUtils');
 const Badge = require('../models/Badge');
 
-// Initialize YouTube API client
+// Initialize YouTube API client with API key from environment
 const youtube = google.youtube({
   version: 'v3',
   auth: process.env.YOUTUBE_API_KEY
 });
 
 /**
- * Extract YouTube playlist ID from URL
+ * Extracts YouTube playlist ID from various URL formats
  * @param {string} url - YouTube playlist URL
- * @returns {string|null} - Playlist ID or null if not found
+ * @returns {string|null} Extracted playlist ID or null if invalid URL
+ * @description Supports standard YouTube playlist URLs
+ * Example: https://www.youtube.com/playlist?list=PLAYLIST_ID
  */
 const extractPlaylistId = (url) => {
   try {
     const urlObj = new URL(url);
     
-    // For URLs like https://www.youtube.com/playlist?list=PLAYLIST_ID
     if (urlObj.searchParams.has('list')) {
       return urlObj.searchParams.get('list');
     }
@@ -35,13 +46,17 @@ const extractPlaylistId = (url) => {
 };
 
 /**
- * Fetch all videos from a YouTube playlist
+ * Fetches complete playlist information from YouTube API
  * @param {string} playlistId - YouTube playlist ID
- * @returns {Promise<Array>} - Array of video details
+ * @returns {Promise<Object>} Playlist info and video details
+ * @description
+ * - Retrieves playlist metadata (title, description, thumbnail, etc.)
+ * - Fetches all videos in the playlist with complete details
+ * - Handles pagination for playlists with more than 50 videos
+ * - Caches results for 24 hours to minimize API calls
  */
 const fetchPlaylistVideos = async (playlistId) => {
   try {
-    // Check cache first
     const cacheKey = `yt:playlist:${playlistId}`;
     const cachedData = await getCache(cacheKey);
     
@@ -49,7 +64,7 @@ const fetchPlaylistVideos = async (playlistId) => {
       return cachedData;
     }
     
-    // First, get playlist details
+    // Fetch playlist metadata
     const playlistResponse = await youtube.playlists.list({
       part: 'snippet,contentDetails',
       id: playlistId
@@ -68,8 +83,8 @@ const fetchPlaylistVideos = async (playlistId) => {
     const videos = [];
     let nextPageToken = null;
     
+    // Fetch all videos using pagination
     do {
-      // Fetch playlist items
       const response = await youtube.playlistItems.list({
         part: 'snippet,contentDetails',
         playlistId,
@@ -79,14 +94,14 @@ const fetchPlaylistVideos = async (playlistId) => {
       
       const videoIds = response.data.items.map(item => item.contentDetails.videoId);
       
-      // Fetch video details (for duration and view count)
+      // Fetch detailed video information
       if (videoIds.length > 0) {
         const videoDetails = await youtube.videos.list({
           part: 'contentDetails,snippet,statistics',
           id: videoIds.join(',')
         });
         
-        // Combine data from both API calls
+        // Combine playlist position with video details
         videoDetails.data.items.forEach(videoDetail => {
           const playlistItem = response.data.items.find(
             item => item.contentDetails.videoId === videoDetail.id
@@ -110,7 +125,7 @@ const fetchPlaylistVideos = async (playlistId) => {
       nextPageToken = response.data.nextPageToken;
     } while (nextPageToken);
     
-    // Sort videos by position
+    // Ensure videos are in correct playlist order
     videos.sort((a, b) => a.position - b.position);
     
     const result = {
@@ -118,8 +133,7 @@ const fetchPlaylistVideos = async (playlistId) => {
       videos
     };
     
-    // Cache the result for 24 hours
-    await setCache(cacheKey, result, 86400);
+    await setCache(cacheKey, result, 86400); // Cache for 24 hours
     
     return result;
   } catch (error) {
@@ -128,7 +142,12 @@ const fetchPlaylistVideos = async (playlistId) => {
   }
 };
 
-// Fetch a single YouTube video details
+/**
+ * Retrieves detailed information for a single YouTube video
+ * @param {string} videoId - YouTube video ID
+ * @returns {Promise<Object|null>} Video details or null if not found
+ * @description Fetches comprehensive video metadata including statistics
+ */
 const fetchYouTubeVideo = async (videoId) => {
   try {
     const videoDetails = await youtube.videos.list({
@@ -160,17 +179,22 @@ const fetchYouTubeVideo = async (videoId) => {
   }
 };
 
-// Extract YouTube video ID from URL
+/**
+ * Extracts YouTube video ID from various URL formats
+ * @param {string} url - YouTube video URL
+ * @returns {string|null} Video ID or null if invalid URL
+ * @description Supports multiple YouTube URL formats:
+ * - Standard watch URLs: https://www.youtube.com/watch?v=VIDEO_ID
+ * - Short URLs: https://youtu.be/VIDEO_ID
+ */
 const extractVideoId = (url) => {
   try {
     const urlObj = new URL(url);
     
-    // For URLs like https://www.youtube.com/watch?v=VIDEO_ID
     if (urlObj.searchParams.has('v')) {
       return urlObj.searchParams.get('v');
     }
     
-    // For URLs like https://youtu.be/VIDEO_ID
     if (urlObj.hostname === 'youtu.be') {
       return urlObj.pathname.substring(1);
     }
@@ -181,7 +205,12 @@ const extractVideoId = (url) => {
   }
 };
 
-// Helper function to parse ISO 8601 duration to minutes
+/**
+ * Converts ISO 8601 duration format to minutes
+ * @param {string} isoDuration - Duration in ISO 8601 format (e.g., PT1H30M15S)
+ * @returns {number} Duration in minutes
+ * @description Parses hours, minutes, and seconds from ISO duration string
+ */
 const parseIsoDuration = (isoDuration) => {
   if (!isoDuration) return 0;
   
@@ -195,9 +224,15 @@ const parseIsoDuration = (isoDuration) => {
   return hours * 60 + minutes + seconds / 60;
 };
 
-// @route   POST /api/playlist/add
-// @desc    Add a new playlist
-// @access  Private
+/**
+ * @route   POST /api/playlist/add
+ * @desc    Creates a new playlist from YouTube URL or custom content
+ * @access  Private
+ * @param   {string} req.body.url - YouTube playlist URL (optional)
+ * @param   {string} req.body.name - Custom playlist name
+ * @param   {string} req.body.category - Playlist category
+ * @returns {Object} Created playlist details
+ */
 router.post('/add', authenticateToken, async (req, res) => {
   try {
     const { ytPlaylistUrl, name, category } = req.body;

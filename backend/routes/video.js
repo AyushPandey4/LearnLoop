@@ -1,3 +1,14 @@
+/**
+ * Video Management Routes
+ * This module handles all video-related operations including:
+ * - Video CRUD operations
+ * - Video status management
+ * - Video pinning and unpinning
+ * - Video progress tracking
+ * - AI-powered video summaries
+ * - Video timestamps and resources
+ */
+
 const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middleware/auth');
@@ -10,10 +21,11 @@ const { generateVideoSummary } = require('../services/aiService');
 const { parseTimestamps } = require('../utils/videoUtils');
 
 /**
- * Check if user has access to video
- * @param {string} videoId - Video ID
- * @param {string} userId - User ID
- * @returns {Promise<boolean>} - True if user has access
+ * Verifies if a user has access to a specific video
+ * @param {string} videoId - The ID of the video to check
+ * @param {string} userId - The ID of the user requesting access
+ * @returns {Promise<boolean>} True if user has access, false otherwise
+ * @description Checks if the video exists and belongs to a playlist owned by the user
  */
 const hasAccessToVideo = async (videoId, userId) => {
   try {
@@ -32,53 +44,55 @@ const hasAccessToVideo = async (videoId, userId) => {
 };
 
 /**
- * Check if playlist is completed and issue badge if needed
- * @param {string} playlistId - Playlist ID
- * @param {string} userId - User ID
+ * Checks playlist completion and awards badges
+ * @param {string} playlistId - The ID of the playlist to check
+ * @param {string} userId - The ID of the user who owns the playlist
+ * @description 
+ * - Verifies if all videos in a playlist are completed
+ * - Updates playlist completion status
+ * - Awards completion badge if not already earned
+ * - Updates cache for affected resources
  */
 const checkAndAwardCompletionBadge = async (playlistId, userId) => {
   try {
-    // Get all videos in the playlist
     const videos = await Video.find({ playlistId });
     
-    // Check if all videos are completed
     const allCompleted = videos.every(video => video.status === 'completed');
     
     if (allCompleted) {
-      // Update playlist completion status
+      // Mark playlist as completed
       await Playlist.findByIdAndUpdate(playlistId, { completed: true });
       
-      // Get playlist name for badge
       const playlist = await Playlist.findById(playlistId);
       
-      // Check if user already has this badge
+      // Check for existing completion badge
       const existingBadge = await Badge.findOne({
         userId,
         title: `Completed: ${playlist.name}`
       });
       
       if (!existingBadge) {
-        // Create a completion badge
+        // Create and award new completion badge
         const badge = new Badge({
           userId,
           title: `Completed: ${playlist.name}`,
           description: `Completed all videos in the "${playlist.name}" playlist`,
-          iconUrl: '🏆', // Simple emoji as placeholder
+          iconUrl: '🏆',
           dateEarned: new Date()
         });
         
         await badge.save();
         
-        // Add badge to user
+        // Associate badge with user
         await User.findByIdAndUpdate(userId, {
           $push: { badges: badge._id }
         });
         
-        // Clear badge cache to ensure the new badge is visible
+        // Invalidate badge cache
         await deleteCache(`badges:${userId}`);
       }
       
-      // Clear related cache
+      // Invalidate related caches
       await deleteCache(`playlist:${playlistId}`);
       await deleteCache(`playlists:${userId}`);
     }
@@ -87,27 +101,29 @@ const checkAndAwardCompletionBadge = async (playlistId, userId) => {
   }
 };
 
-// @route   GET /api/video/pinned
-// @desc    Get all pinned videos
-// @access  Private
+/**
+ * @route   GET /api/video/pinned
+ * @desc    Retrieves all pinned videos across user's playlists
+ * @access  Private
+ * @returns {Object} { videos: Array of pinned videos with playlist context }
+ */
 router.get('/pinned', authenticateToken, async (req, res) => {
   try {
-    // Get all playlists for this user
+    // Retrieve all playlists owned by the user
     const userPlaylists = await Playlist.find({ userId: req.user.id });
     const playlistIds = userPlaylists.map(playlist => playlist._id);
     
-    // Find all pinned videos
+    // Find all pinned videos in user's playlists
     const pinnedVideos = await Video.find({
       playlistId: { $in: playlistIds },
       pinned: true
     }).select('title ytId status timeSpent notes thumbnail duration viewCount publishedAt channelTitle description playlistId position');
     
-    // If no pinned videos found
     if (pinnedVideos.length === 0) {
       return res.json({ videos: [] });
     }
     
-    // Create map of playlist details for each video
+    // Create lookup map for playlist metadata
     const playlistMap = {};
     userPlaylists.forEach(p => {
       playlistMap[p._id.toString()] = {
@@ -116,7 +132,7 @@ router.get('/pinned', authenticateToken, async (req, res) => {
       };
     });
     
-    // Add playlist information to each video
+    // Enrich video data with playlist context
     const videosWithPlaylistInfo = pinnedVideos.map(video => {
       const playlistInfo = playlistMap[video.playlistId.toString()] || {};
       
@@ -147,14 +163,18 @@ router.get('/pinned', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   GET /api/video/:id
-// @desc    Fetch one video by ID
-// @access  Private
+/**
+ * @route   GET /api/video/:id
+ * @desc    Retrieves detailed information about a specific video
+ * @access  Private
+ * @param   {string} req.params.id - Video ID
+ * @returns {Object} Video details including playlist context and learning resources
+ */
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const videoId = req.params.id;
     
-    // Check cache first
+    // Check cache for video data
     const cacheKey = `video:${videoId}`;
     const cachedVideo = await getCache(cacheKey);
     
@@ -162,23 +182,23 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.json(cachedVideo);
     }
     
-    // Verify user has access to this video
+    // Verify user's access to the video
     const hasAccess = await hasAccessToVideo(videoId, req.user.id);
     if (!hasAccess) {
       return res.status(403).json({ msg: 'Access denied' });
     }
     
-    // Fetch video
+    // Retrieve video details
     const video = await Video.findById(videoId);
     
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }
     
-    // Get playlist info for context
+    // Get associated playlist context
     const playlist = await Playlist.findById(video.playlistId).select('name category isCustomPlaylist');
     
-    // Format response
+    // Construct response with full context
     const result = {
       id: video._id,
       title: video.title,
@@ -197,7 +217,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
       resources: video.resources || []
     };
     
-    // Cache the result for 1 hour
+    // Cache the enriched video data
     await setCache(cacheKey, result, 3600);
     
     res.json(result);
@@ -435,50 +455,103 @@ router.post('/:id/generate-summary', authenticateToken, async (req, res) => {
       return res.status(403).json({ msg: 'Access denied' });
     }
     
-    // Get video
+    // Fetch video
     const video = await Video.findById(videoId);
-    
     if (!video) {
       return res.status(404).json({ msg: 'Video not found' });
     }
     
     // Check if a summary has already been generated
-    if (video.aiSummaryGenerated) {
-      return res.status(400).json({ 
-        msg: 'Summary already exists for this video', 
-        aiSummary: video.aiSummary 
+    if (video.aiSummaryGenerated && video.aiSummary) {
+      return res.json({
+        msg: 'Summary already exists for this video',
+        aiSummary: video.aiSummary,
+        aiSummaryGenerated: true
       });
     }
-    
+
+    // Validate YouTube video ID
+    if (!video.ytId) {
+      return res.status(400).json({ 
+        msg: 'Invalid YouTube video ID',
+        error: 'INVALID_YOUTUBE_ID'
+      });
+    }
+
     // Generate summary from transcript
-    const summary = await generateVideoSummary(video.ytId, video.title);
-    
-    // Update video with summary
-    video.aiSummary = summary;
-    video.aiSummaryGenerated = true;
-    await video.save();
-    
-    // Clear cache
-    await deleteCache(`video:${videoId}`);
-    
-    res.json({ 
-      id: video._id, 
-      aiSummary: video.aiSummary,
-      aiSummaryGenerated: true
-    });
+    try {
+      console.log('Attempting to generate summary for video:', video.ytId);
+      const summary = await generateVideoSummary(video.ytId, video.title);
+      
+      if (!summary) {
+        console.error('No summary content returned for video:', video.ytId);
+        return res.status(500).json({ 
+          msg: 'Failed to generate summary - no content returned',
+          error: 'NO_SUMMARY_CONTENT'
+        });
+      }
+
+      // Update video with summary
+      video.aiSummary = summary;
+      video.aiSummaryGenerated = true;
+      await video.save();
+
+      // Clear cache
+      await deleteCache(`video:${videoId}`);
+      
+      return res.json({
+        msg: 'Summary generated successfully',
+        aiSummary: video.aiSummary,
+        aiSummaryGenerated: true
+      });
+
+    } catch (summaryError) {
+      console.error('Summary generation error:', summaryError);
+
+      // Handle specific error types
+      if (summaryError.message.includes('No transcript available')) {
+        return res.status(400).json({
+          msg: 'No transcript available for this video',
+          error: 'NO_TRANSCRIPT'
+        });
+      }
+      
+      if (summaryError.message.includes('API key is not configured')) {
+        return res.status(500).json({
+          msg: 'AI service configuration error',
+          error: 'API_KEY_MISSING'
+        });
+      }
+
+      if (summaryError.message.includes('Failed to get video transcript')) {
+        return res.status(400).json({
+          msg: 'Could not fetch video transcript',
+          error: 'TRANSCRIPT_FETCH_FAILED'
+        });
+      }
+
+      if (summaryError.message.includes('blocked by safety settings')) {
+        return res.status(400).json({
+          msg: 'Content was blocked by AI safety settings',
+          error: 'CONTENT_BLOCKED'
+        });
+      }
+
+      // Generic error handling
+      console.error('Unhandled error in summary generation:', summaryError);
+      return res.status(500).json({
+        msg: `Failed to generate summary: ${summaryError.message}`,
+        error: 'SUMMARY_GENERATION_FAILED'
+      });
+    }
+
   } catch (err) {
-    console.error('Error generating summary from transcript:', err);
-    
-    // More specific error handling
-    if (err.message.includes('No transcript available')) {
-      return res.status(404).json({ msg: 'No transcript available for this video' });
-    }
-    
-    if (err.message.includes('Rate limit')) {
-      return res.status(429).json({ msg: 'Rate limit exceeded. Please try again later.' });
-    }
-    
-    res.status(500).json({ msg: 'Error generating summary' });
+    console.error('Error in summary generation route:', err);
+    res.status(500).json({ 
+      msg: 'Server error while processing summary request',
+      error: 'SERVER_ERROR',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import TagManager from '@/components/playlist/TagManager';
 import ResourceManager from '@/components/playlist/ResourceManager';
+import WarningDialog from '@/components/common/WarningDialog';
 
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -31,6 +32,7 @@ export default function VideoPage() {
   const [tags, setTags] = useState([]);
   const [isCustomPlaylist, setIsCustomPlaylist] = useState(false);
   const [removingVideo, setRemovingVideo] = useState(false);
+  const [isWarningDialogOpen, setIsWarningDialogOpen] = useState(false);
 
   // References for tracking time spent
   const startTimeRef = useRef(null);
@@ -246,22 +248,29 @@ export default function VideoPage() {
     }
   };
 
-  const generateSummary = async () => {
+  const handleGenerateSummary = () => {
+    setIsWarningDialogOpen(true);
+  };
+
+  const confirmGenerateSummary = async () => {
+    setIsWarningDialogOpen(false);
     if (!video || isGeneratingSummary) return;
     
-    setIsGeneratingSummary(true);
-    setSummaryError('');
-    
     try {
+      setIsGeneratingSummary(true);
+      setSummaryError('');
+      
       const response = await axios.post(`${API_URL}/api/video/${id}/generate-summary`);
+      
       setVideo(prev => ({
         ...prev,
         aiSummary: response.data.aiSummary,
         aiSummaryGenerated: true
       }));
+      
     } catch (err) {
       console.error('Error generating summary:', err);
-      setSummaryError(err.response?.data?.msg || 'Failed to generate summary. Please try again.');
+      setSummaryError(err.response?.data?.msg || 'Failed to generate summary');
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -664,26 +673,26 @@ export default function VideoPage() {
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
                   AI Summary
                 </h2>
-                {video.aiSummaryGenerated ? (
-                  <button
-                    onClick={generateSummary}
-                    className="px-3 py-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-md text-sm font-medium hover:bg-blue-200 dark:hover:bg-blue-800 transition-all duration-200"
-                  >
-                    Regenerate
-                  </button>
-                ) : (
-                  <button
-                    onClick={generateSummary}
-                    disabled={isGeneratingSummary}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                      isGeneratingSummary
-                        ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-                    }`}
-                  >
-                    {isGeneratingSummary ? 'Generating...' : 'Generate Summary'}
-                  </button>
-                )}
+                <button
+                  onClick={handleGenerateSummary}
+                  disabled={isGeneratingSummary || video?.aiSummaryGenerated}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    isGeneratingSummary || video?.aiSummaryGenerated
+                      ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+                  }`}
+                >
+                  {isGeneratingSummary ? (
+                    <span className="flex items-center">
+                      <LoadingSpinner size="small" />
+                      <span className="ml-2">Generating...</span>
+                    </span>
+                  ) : video?.aiSummaryGenerated ? (
+                    'Summary Generated'
+                  ) : (
+                    'Generate AI Summary'
+                  )}
+                </button>
               </div>
               
               {summaryError && (
@@ -746,6 +755,14 @@ export default function VideoPage() {
           </div>
         </div>
       </div>
+      
+      <WarningDialog
+        isOpen={isWarningDialogOpen}
+        onClose={() => setIsWarningDialogOpen(false)}
+        onConfirm={confirmGenerateSummary}
+        title="AI Summary Generation"
+        message="Please note that the AI summary generation feature has usage limits and may not always work as expected. The feature uses Google's Gemini AI model which has rate limits and may occasionally be unavailable. Would you like to proceed with generating the summary?"
+      />
     </div>
   );
 } 

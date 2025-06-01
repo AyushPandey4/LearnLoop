@@ -1,3 +1,11 @@
+/**
+ * User Management Routes
+ * This module handles all user-related operations including:
+ * - Category management (CRUD operations)
+ * - Daily goal management
+ * - User preferences and settings
+ */
+
 const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middleware/auth');
@@ -6,9 +14,13 @@ const Playlist = require('../models/Playlist');
 const Video = require('../models/Video');
 const { setCache, getCache, deleteCache } = require('../config/redisUtils');
 
-// @route   POST /api/user/category
-// @desc    Create new category
-// @access  Private
+/**
+ * @route   POST /api/user/category
+ * @desc    Creates a new category for organizing playlists
+ * @access  Private
+ * @param   {string} req.body.category - Name of the new category
+ * @returns {Array} Updated list of user's categories
+ */
 router.post('/category', authenticateToken, async (req, res) => {
   try {
     const { category } = req.body;
@@ -17,23 +29,21 @@ router.post('/category', authenticateToken, async (req, res) => {
       return res.status(400).json({ msg: 'Category name is required' });
     }
     
-    // Find user and update categories
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Check if category already exists
+    // Prevent duplicate categories
     if (user.categories.includes(category)) {
       return res.status(400).json({ msg: 'Category already exists' });
     }
     
-    // Add new category
     user.categories.push(category);
     await user.save();
     
-    // Update cache
+    // Invalidate and update relevant caches
     await deleteCache(`user:${user.id}`);
     await deleteCache(`categories:${user.id}`);
     await setCache(`categories:${user.id}`, user.categories, 86400);
@@ -45,26 +55,27 @@ router.post('/category', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   GET /api/user/categories
-// @desc    Fetch user's categories
-// @access  Private
+/**
+ * @route   GET /api/user/categories
+ * @desc    Retrieves all categories for the authenticated user
+ * @access  Private
+ * @returns {Array} List of user's categories
+ */
 router.get('/categories', authenticateToken, async (req, res) => {
   try {
-    // Try to get categories from cache
+    // Check cache first for better performance
     const cachedCategories = await getCache(`categories:${req.user.id}`);
     
     if (cachedCategories) {
       return res.json(cachedCategories);
     }
     
-    // If not in cache, get from database
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Cache the categories
     await setCache(`categories:${user.id}`, user.categories, 86400);
     
     res.json(user.categories);
@@ -74,9 +85,14 @@ router.get('/categories', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   PUT /api/user/category
-// @desc    Rename a category
-// @access  Private
+/**
+ * @route   PUT /api/user/category
+ * @desc    Renames an existing category and updates associated playlists
+ * @access  Private
+ * @param   {string} req.body.oldCategory - Current category name
+ * @param   {string} req.body.newCategory - New category name
+ * @returns {Array} Updated list of user's categories
+ */
 router.put('/category', authenticateToken, async (req, res) => {
   try {
     const { oldCategory, newCategory } = req.body;
@@ -85,35 +101,32 @@ router.put('/category', authenticateToken, async (req, res) => {
       return res.status(400).json({ msg: 'Both old and new category names are required' });
     }
     
-    // Find user
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Check if old category exists
     if (!user.categories.includes(oldCategory)) {
       return res.status(400).json({ msg: 'Category does not exist' });
     }
     
-    // Check if new category already exists
     if (user.categories.includes(newCategory)) {
       return res.status(400).json({ msg: 'New category name already exists' });
     }
     
-    // Update user's category
+    // Update category name in user's categories
     const categoryIndex = user.categories.indexOf(oldCategory);
     user.categories[categoryIndex] = newCategory;
     await user.save();
     
-    // Update all playlists with this category
+    // Update category name in all associated playlists
     await Playlist.updateMany(
       { userId: req.user.id, category: oldCategory },
       { category: newCategory }
     );
     
-    // Update cache
+    // Invalidate and update relevant caches
     await deleteCache(`user:${user.id}`);
     await deleteCache(`categories:${user.id}`);
     await deleteCache(`playlists:${user.id}`);
@@ -126,9 +139,14 @@ router.put('/category', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   DELETE /api/user/category/:categoryName
-// @desc    Delete a category
-// @access  Private
+/**
+ * @route   DELETE /api/user/category/:categoryName
+ * @desc    Deletes a category and optionally its associated playlists
+ * @access  Private
+ * @param   {string} req.params.categoryName - Name of category to delete
+ * @param   {boolean} req.query.deleteAssociatedPlaylists - Whether to delete associated playlists
+ * @returns {Object} Updated categories and count of deleted playlists
+ */
 router.delete('/category/:categoryName', authenticateToken, async (req, res) => {
   try {
     const categoryName = req.params.categoryName;
@@ -138,19 +156,17 @@ router.delete('/category/:categoryName', authenticateToken, async (req, res) => 
       return res.status(400).json({ msg: 'Category name is required' });
     }
     
-    // Find user
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Check if category exists
     if (!user.categories.includes(categoryName)) {
       return res.status(400).json({ msg: 'Category does not exist' });
     }
     
-    // Check if there are playlists using this category
+    // Check for playlists in this category
     const playlistsWithCategory = await Playlist.find({
       userId: req.user.id,
       category: categoryName
@@ -166,33 +182,32 @@ router.delete('/category/:categoryName', authenticateToken, async (req, res) => 
       });
     }
     
-    // If we should delete associated playlists
+    // Handle associated playlist deletion if requested
     if (deleteAssociatedPlaylists && playlistCount > 0) {
-      // Get playlist IDs to remove from user
       const playlistIds = playlistsWithCategory.map(playlist => playlist._id);
       
-      // Remove playlists from user
+      // Remove playlist references from user
       user.playlists = user.playlists.filter(
         id => !playlistIds.some(playlistId => playlistId.equals(id))
       );
       
-      // Delete all videos associated with these playlists
+      // Cascade delete associated videos
       for (const playlist of playlistsWithCategory) {
         await Video.deleteMany({ playlistId: playlist._id });
       }
       
-      // Delete all playlists in this category
+      // Delete the playlists
       await Playlist.deleteMany({
         userId: req.user.id,
         category: categoryName
       });
     }
     
-    // Remove category
+    // Remove the category
     user.categories = user.categories.filter(cat => cat !== categoryName);
     await user.save();
     
-    // Update cache
+    // Invalidate and update relevant caches
     await deleteCache(`user:${user.id}`);
     await deleteCache(`categories:${user.id}`);
     await deleteCache(`playlists:${user.id}`);
@@ -208,9 +223,13 @@ router.delete('/category/:categoryName', authenticateToken, async (req, res) => 
   }
 });
 
-// @route   POST /api/user/daily-goal
-// @desc    Set/update current daily goal
-// @access  Private
+/**
+ * @route   POST /api/user/daily-goal
+ * @desc    Sets or updates the user's daily learning goal
+ * @access  Private
+ * @param   {string} req.body.dailyGoal - The new daily goal
+ * @returns {Object} Updated daily goal
+ */
 router.post('/daily-goal', authenticateToken, async (req, res) => {
   try {
     const { dailyGoal } = req.body;
@@ -219,7 +238,6 @@ router.post('/daily-goal', authenticateToken, async (req, res) => {
       return res.status(400).json({ msg: 'Daily goal is required' });
     }
     
-    // Find user and update daily goal
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { dailyGoal },
@@ -241,26 +259,26 @@ router.post('/daily-goal', authenticateToken, async (req, res) => {
   }
 });
 
-// @route   GET /api/user/daily-goal
-// @desc    Fetch current daily goal
-// @access  Private
+/**
+ * @route   GET /api/user/daily-goal
+ * @desc    Retrieves the user's current daily learning goal
+ * @access  Private
+ * @returns {Object} Current daily goal
+ */
 router.get('/daily-goal', authenticateToken, async (req, res) => {
   try {
-    // Try to get daily goal from cache
     const cachedDailyGoal = await getCache(`daily-goal:${req.user.id}`);
     
     if (cachedDailyGoal !== null) {
       return res.json({ dailyGoal: cachedDailyGoal });
     }
     
-    // If not in cache, get from database
     const user = await User.findById(req.user.id);
     
     if (!user) {
       return res.status(404).json({ msg: 'User not found' });
     }
     
-    // Cache the daily goal
     await setCache(`daily-goal:${user.id}`, user.dailyGoal, 86400);
     
     res.json({ dailyGoal: user.dailyGoal });

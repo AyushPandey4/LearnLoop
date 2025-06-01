@@ -7,6 +7,15 @@ export const metadata = {
   title: 'LearnLoop - Your Learning Journey Companion',
   description: 'Track, organize, and enhance your learning journey with LearnLoop. Manage your notes, videos, and playlists in one place.',
   keywords: 'learning, education, notes, videos, playlists, organization, productivity',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+    other: {
+      rel: 'apple-touch-icon-precomposed',
+      url: '/favicon.svg',
+    },
+  },
 };
 
 export default function RootLayout({ children }) {

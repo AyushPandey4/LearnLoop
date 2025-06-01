@@ -5,6 +5,11 @@ const dotenv = require('dotenv');
 // Load env vars
 dotenv.config();
 
+// Add this after dotenv config
+if (!process.env.GEMINI_API_KEY) {
+  console.error('WARNING: GEMINI_API_KEY is not set in environment variables');
+}
+
 // Import DB configurations
 const connectDB = require('./config/db');
 const { connectRedis } = require('./config/redis');
