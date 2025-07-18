@@ -21,18 +21,14 @@ LearnLoop is a modern web application designed to help you track, organize, and 
 ### 🎯 Learning Management
 
 - **Daily Goals Tracking**
-
   - Set and monitor daily learning objectives
   - Track progress towards goals
   - Visual progress indicators
-
 - **Playlist Organization**
-
   - Create and manage custom playlists
   - Categorize learning content
   - Easy playlist navigation
   - Drag-and-drop playlist management
-
 - **Video Management**
   - Track watched videos
   - Take notes for each video
@@ -96,105 +92,113 @@ LearnLoop is a modern web application designed to help you track, organize, and 
 ## 📁 Project Structure
 
 ### High-Level Overview
+```text
 .
-├── LearnLoop-frontend/ # Contains the Next.js frontend application
-├── backend/ # Contains the Node.js/Express backend API
-└── README.md # This file
+├── LearnLoop-frontend/   # Contains the Next.js frontend application
+├── backend/              # Contains the Node.js/Express backend API
+└── README.md             # This file
+```
 
 <details>
 <summary>Click to expand Frontend Structure</summary>
+
+```text
 LearnLoop-frontend/
 ├── public/
-│ ├── favicon.svg
-│ ├── file.svg
-│ ├── globe.svg
-│ ├── next.svg
-│ ├── vercel.svg
-│ └── window.svg
+│   ├── favicon.svg
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
 ├── src/
-│ ├── app/
-│ │ ├── badges/
-│ │ │ └── page.jsx
-│ │ ├── dashboard/
-│ │ │ └── page.jsx
-│ │ ├── notes-search/
-│ │ │ └── page.jsx
-│ │ ├── playlist/
-│ │ │ └── [id]/
-│ │ │ └── page.jsx
-│ │ ├── tags-search/
-│ │ │ └── page.jsx
-│ │ ├── video/
-│ │ │ └── [id]/
-│ │ │ └── page.jsx
-│ │ ├── favicon.ico
-│ │ ├── globals.css
-│ │ ├── layout.js
-│ │ ├── page.js
-│ │ └── Providers.jsx
-│ ├── components/
-│ │ ├── common/
-│ │ │ ├── LoadingSpinner.jsx
-│ │ │ └── WarningDialog.jsx
-│ │ ├── dashboard/
-│ │ │ ├── AddPlaylistModal.jsx
-│ │ │ ├── DailyGoal.jsx
-│ │ │ ├── PinnedVideosWidget.jsx
-│ │ │ ├── PlaylistGrid.jsx
-│ │ │ ├── RewatchWidget.jsx
-│ │ │ └── Sidebar.jsx
-│ │ ├── playlist/
-│ │ │ ├── DraggableVideoList.jsx
-│ │ │ ├── PlaylistHeader.jsx
-│ │ │ ├── ResourceManager.jsx
-│ │ │ ├── RewatchSection.jsx
-│ │ │ ├── TagManager.jsx
-│ │ │ ├── VideoCard.jsx
-│ │ │ └── VideoList.jsx
-│ │ ├── LandingPage.jsx
-│ │ └── Navbar.jsx
-│ ├── context/
-│ │ ├── AuthContext.jsx
-│ │ └── PlaylistContext.jsx
-│ └── utils/
-│ └── theme.js
+│   ├── app/
+│   │   ├── badges/
+│   │   │   └── page.jsx
+│   │   ├── dashboard/
+│   │   │   └── page.jsx
+│   │   ├── notes-search/
+│   │   │   └── page.jsx
+│   │   ├── playlist/
+│   │   │   └── [id]/
+│   │   │       └── page.jsx
+│   │   ├── tags-search/
+│   │   │   └── page.jsx
+│   │   ├── video/
+│   │   │   └── [id]/
+│   │   │       └── page.jsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.js
+│   │   ├── page.js
+│   │   └── Providers.jsx
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── LoadingSpinner.jsx
+│   │   │   └── WarningDialog.jsx
+│   │   ├── dashboard/
+│   │   │   ├── AddPlaylistModal.jsx
+│   │   │   ├── DailyGoal.jsx
+│   │   │   ├── PinnedVideosWidget.jsx
+│   │   │   ├── PlaylistGrid.jsx
+│   │   │   ├── RewatchWidget.jsx
+│   │   │   └── Sidebar.jsx
+│   │   ├── playlist/
+│   │   │   ├── DraggableVideoList.jsx
+│   │   │   ├── PlaylistHeader.jsx
+│   │   │   ├── ResourceManager.jsx
+│   │   │   ├── RewatchSection.jsx
+│   │   │   ├── TagManager.jsx
+│   │   │   ├── VideoCard.jsx
+│   │   │   └── VideoList.jsx
+│   │   ├── LandingPage.jsx
+│   │   └── Navbar.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── PlaylistContext.jsx
+│   └── utils/
+│       └── theme.js
 ├── .env.local.example
 ├── next.config.mjs
 ├── package.json
 ├── postcss.config.mjs
 └── README.md
+```
 </details>
 
 <details>
 <summary>Click to expand Backend Structure</summary>
+
+```text
 backend/
 ├── config/
-│ ├── db.js # MongoDB connection setup
-│ ├── redis.js # Redis client setup
-│ └── redisUtils.js # Redis utility functions for caching
+│   ├── db.js             # MongoDB connection setup
+│   ├── redis.js          # Redis client setup
+│   └── redisUtils.js     # Redis utility functions for caching
 ├── middleware/
-│ └── auth.js # JWT authentication middleware
+│   └── auth.js           # JWT authentication middleware
 ├── models/
-│ ├── Badge.js # Mongoose model for badges
-│ ├── Playlist.js # Mongoose model for playlists
-│ ├── User.js # Mongoose model for users
-│ ├── Video.js # Mongoose model for videos
-│ └── index.js # Exports all models
+│   ├── Badge.js          # Mongoose model for badges
+│   ├── Playlist.js       # Mongoose model for playlists
+│   ├── User.js           # Mongoose model for users
+│   ├── Video.js          # Mongoose model for videos
+│   └── index.js          # Exports all models
 ├── routes/
-│ ├── auth.js # Authentication routes (Google OAuth, user data)
-│ ├── badge.js # Routes for managing user badges
-│ ├── playlist.js # Routes for playlist management
-│ ├── user.js # Routes for user profile and settings
-│ └── video.js # Routes for video management
+│   ├── auth.js           # Authentication routes (Google OAuth, user data)
+│   ├── badge.js          # Routes for managing user badges
+│   ├── playlist.js       # Routes for playlist management
+│   ├── user.js           # Routes for user profile and settings
+│   └── video.js          # Routes for video management
 ├── services/
-│ └── aiService.js # Service for interacting with the OpenAI API
+│   └── aiService.js      # Service for interacting with the OpenAI API
 ├── utils/
-│ └── videoUtils.js # Utility functions for video processing
-├── .env.example # Example environment variables file
-├── .gitignore # Git ignore file
-├── index.js # Main application entry point
-├── package.json # Project dependencies and scripts
-└── README.md # Backend-specific README
+│   └── videoUtils.js     # Utility functions for video processing
+├── .env.example          # Example environment variables file
+├── .gitignore            # Git ignore file
+├── index.js              # Main application entry point
+├── package.json          # Project dependencies and scripts
+└── README.md             # Backend-specific README
+```
 </details>
 
 ## 🚀 Getting Started
