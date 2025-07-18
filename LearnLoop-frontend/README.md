@@ -64,18 +64,66 @@ yarn dev
 ## Project Structure
 
 ```
-src/
-├── app/                 # Next.js app directory
-│   ├── (auth)/         # Authentication routes
-│   ├── (dashboard)/    # Dashboard routes
-│   └── layout.tsx      # Root layout
-├── components/         # Reusable components
-│   ├── auth/          # Authentication components
-│   ├── dashboard/     # Dashboard components
-│   ├── playlist/      # Playlist components
-│   └── ui/            # UI components
-├── context/           # React Context providers
-└── utils/            # Utility functions
+LearnLoop-frontend/
+├── public/
+│   ├── favicon.svg
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── src/
+│   ├── app/
+│   │   ├── badges/
+│   │   │   └── page.jsx
+│   │   ├── dashboard/
+│   │   │   └── page.jsx
+│   │   ├── notes-search/
+│   │   │   └── page.jsx
+│   │   ├── playlist/
+│   │   │   └── [id]/
+│   │   │       └── page.jsx
+│   │   ├── tags-search/
+│   │   │   └── page.jsx
+│   │   ├── video/
+│   │   │   └── [id]/
+│   │   │       └── page.jsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.js
+│   │   ├── page.js
+│   │   └── Providers.jsx
+│   ├── components/
+│   │   ├── common/
+│   │   │   ├── LoadingSpinner.jsx
+│   │   │   └── WarningDialog.jsx
+│   │   ├── dashboard/
+│   │   │   ├── AddPlaylistModal.jsx
+│   │   │   ├── DailyGoal.jsx
+│   │   │   ├── PinnedVideosWidget.jsx
+│   │   │   ├── PlaylistGrid.jsx
+│   │   │   ├── RewatchWidget.jsx
+│   │   │   └── Sidebar.jsx
+│   │   ├── playlist/
+│   │   │   ├── DraggableVideoList.jsx
+│   │   │   ├── PlaylistHeader.jsx
+│   │   │   ├── ResourceManager.jsx
+│   │   │   ├── RewatchSection.jsx
+│   │   │   ├── TagManager.jsx
+│   │   │   ├── VideoCard.jsx
+│   │   │   └── VideoList.jsx
+│   │   ├── LandingPage.jsx
+│   │   └── Navbar.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── PlaylistContext.jsx
+│   └── utils/
+│       └── theme.js
+├── .env.local.example
+├── next.config.mjs
+├── package.json
+├── postcss.config.mjs
+└── README.md
 ```
 
 ## Key Components

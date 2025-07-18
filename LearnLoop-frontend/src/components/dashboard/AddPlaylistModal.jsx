@@ -13,13 +13,13 @@ export default function AddPlaylistModal({ onClose, onAdd, categories, onAddCate
   const [urlError, setUrlError] = useState('');
   const [isCustomPlaylist, setIsCustomPlaylist] = useState(false);
 
-  // Validate YouTube playlist URL format
+ 
   const validateYouTubeUrl = (url) => {
     if (!url.trim()) return false;
     
     try {
       const urlObj = new URL(url);
-      // Most YouTube playlist URLs contain a 'list' parameter
+   
       const hasListParam = urlObj.searchParams.has('list');
       
       const isYouTubeDomain = 
@@ -36,24 +36,24 @@ export default function AddPlaylistModal({ onClose, onAdd, categories, onAddCate
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Reset previous errors
+    
     setError('');
     setUrlError('');
     
-    // Validate required fields
+   
     if (!name.trim()) {
       setError('Name is required');
       return;
     }
     
-    // Only validate URL if not a custom playlist
+   
     if (!isCustomPlaylist) {
     if (!ytPlaylistUrl.trim()) {
       setUrlError('YouTube playlist URL is required');
       return;
     }
     
-    // Validate URL format
+   
     if (!validateYouTubeUrl(ytPlaylistUrl)) {
       setUrlError('Please enter a valid YouTube playlist URL (e.g., https://www.youtube.com/playlist?list=PLAYLIST_ID)');
       return;

@@ -19,15 +19,12 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  // Check if we're on the dashboard route - this runs at build time
-  // so we're using a more generic approach with cookies or URL paths
-  const isDashboard = false; // Will be dynamically determined by client components
+  const isDashboard = false; 
   
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-gray-900">
         <Providers>
-          {/* Navbar will be conditionally shown by the client component */}
           <div id="navbar-container">
             <Navbar />
           </div>

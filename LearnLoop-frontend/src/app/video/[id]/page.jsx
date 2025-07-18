@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import axios from 'axios';
-import { useAuth } from '@/context/AuthContext';
-import Navbar from '@/components/Navbar';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
-import TagManager from '@/components/playlist/TagManager';
-import ResourceManager from '@/components/playlist/ResourceManager';
-import WarningDialog from '@/components/common/WarningDialog';
+import { useState, useEffect, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import Navbar from "@/components/Navbar";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import TagManager from "@/components/playlist/TagManager";
+import ResourceManager from "@/components/playlist/ResourceManager";
+import WarningDialog from "@/components/common/WarningDialog";
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function VideoPage() {
   const { id } = useParams();
@@ -19,13 +19,13 @@ export default function VideoPage() {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState("");
   const [timeSpent, setTimeSpent] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const [timerInterval, setTimerInterval] = useState(null);
   const [currentSessionTime, setCurrentSessionTime] = useState(0);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [summaryError, setSummaryError] = useState('');
+  const [summaryError, setSummaryError] = useState("");
   const [noteSaved, setNoteSaved] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [timeSaving, setTimeSaving] = useState(false);
@@ -34,45 +34,43 @@ export default function VideoPage() {
   const [removingVideo, setRemovingVideo] = useState(false);
   const [isWarningDialogOpen, setIsWarningDialogOpen] = useState(false);
 
-  // References for tracking time spent
   const startTimeRef = useRef(null);
   const accumulatedTimeRef = useRef(0);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user && !loading) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, loading, router]);
 
-  // Fetch video data
   useEffect(() => {
     const fetchVideo = async () => {
       try {
-        // Make sure we have authentication token
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          setError('You must be logged in to view this video');
+          setError("You must be logged in to view this video");
           setLoading(false);
           return;
         }
-        
+
         setLoading(true);
-        // Ensure auth header is set
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         const response = await axios.get(`${API_URL}/api/video/${id}`);
-        
+
         setVideo(response.data);
-        setNote(response.data.notes || '');
+        setNote(response.data.notes || "");
         setTimeSpent(response.data.timeSpent || 0);
         accumulatedTimeRef.current = response.data.timeSpent || 0;
         setError(null);
       } catch (err) {
-        console.error('Error fetching video:', err);
+        console.error("Error fetching video:", err);
         if (err.response?.status === 401 || err.response?.status === 403) {
-          setError('You are not authorized to view this video. Please log in again.');
+          setError(
+            "You are not authorized to view this video. Please log in again."
+          );
         } else {
-          setError('Failed to load video data. Please try again.');
+          setError("Failed to load video data. Please try again.");
         }
       } finally {
         setLoading(false);
@@ -84,7 +82,6 @@ export default function VideoPage() {
     }
   }, [id, user]);
 
-  // Auto-save notes when they change
   useEffect(() => {
     const saveTimeout = setTimeout(() => {
       if (!noteSaved && video) {
@@ -100,67 +97,71 @@ export default function VideoPage() {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    
+
     if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      return `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     }
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+    return `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   // Format minutes for display (e.g., "2h 30m")
   const formatMinutes = (minutes) => {
-    if (!minutes) return '0 min';
-    
+    if (!minutes) return "0 min";
+
     if (minutes < 60) return `${minutes} min`;
-    
+
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    
-    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+
+    return `${hours}h${mins > 0 ? ` ${mins}m` : ""}`;
   };
 
-  // Timer effect for tracking time spent
   useEffect(() => {
     if (timerActive && !timerInterval) {
-      // Set start time when timer is activated
       startTimeRef.current = Date.now();
       setCurrentSessionTime(0);
-      
+
       const interval = setInterval(() => {
         const currentTime = Date.now();
-        const sessionSeconds = Math.floor((currentTime - startTimeRef.current) / 1000);
+        const sessionSeconds = Math.floor(
+          (currentTime - startTimeRef.current) / 1000
+        );
         setCurrentSessionTime(sessionSeconds);
-        
+
         const totalSeconds = accumulatedTimeRef.current + sessionSeconds;
         const totalMinutes = Math.floor(totalSeconds / 60);
         setTimeSpent(totalMinutes);
       }, 1000);
-      
+
       setTimerInterval(interval);
     } else if (!timerActive && timerInterval) {
       clearInterval(timerInterval);
       setTimerInterval(null);
-      
-      // Calculate and save time spent when timer stops
+
       if (startTimeRef.current) {
-        const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        const elapsedSeconds = Math.floor(
+          (Date.now() - startTimeRef.current) / 1000
+        );
         accumulatedTimeRef.current += elapsedSeconds;
         setCurrentSessionTime(0);
-        
-        // Update timeSpent in database
+
         saveTimeSpent();
       }
     }
-    
-    // Cleanup timer on component unmount
+
     return () => {
       if (timerInterval) {
         clearInterval(timerInterval);
-        
-        // If timer was active, save the time spent
+
         if (timerActive && startTimeRef.current) {
-          const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000);
+          const elapsedSeconds = Math.floor(
+            (Date.now() - startTimeRef.current) / 1000
+          );
           accumulatedTimeRef.current += elapsedSeconds;
           saveTimeSpent();
         }
@@ -170,13 +171,12 @@ export default function VideoPage() {
 
   const saveNotes = async () => {
     if (!video) return;
-    
+
     try {
       await axios.patch(`${API_URL}/api/video/${id}/note`, { note });
       setNoteSaved(true);
     } catch (err) {
-      console.error('Error saving notes:', err);
-      // We don't set noteSaved to true here so it will retry
+      console.error("Error saving notes:", err);
     }
   };
 
@@ -187,63 +187,61 @@ export default function VideoPage() {
 
   const saveTimeSpent = async () => {
     if (!video) return;
-    
+
     try {
       setTimeSaving(true);
       const minutesSpent = Math.floor(accumulatedTimeRef.current / 60);
-      const response = await axios.patch(`${API_URL}/api/video/${id}/time`, { timeSpent: minutesSpent });
-      
-      // Update the video state with the new timeSpent
-      setVideo(prev => ({
+      const response = await axios.patch(`${API_URL}/api/video/${id}/time`, {
+        timeSpent: minutesSpent,
+      });
+
+      setVideo((prev) => ({
         ...prev,
-        timeSpent: minutesSpent
+        timeSpent: minutesSpent,
       }));
-      
-      // Also update the displayed time spent
+
       setTimeSpent(minutesSpent);
     } catch (err) {
-      console.error('Error saving time spent:', err);
+      console.error("Error saving time spent:", err);
     } finally {
       setTimeSaving(false);
     }
   };
 
   const toggleTimer = () => {
-    setTimerActive(prev => !prev);
+    setTimerActive((prev) => !prev);
   };
 
   const updateStatus = async (newStatus) => {
     if (!video) return;
-    
+
     try {
-      // Get token
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Authentication required');
-        router.push('/');
+        setError("Authentication required");
+        router.push("/");
         return;
       }
-      
-      // Set auth header for this request
-      const headers = { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       };
-      
+
       await axios.patch(
-        `${API_URL}/api/video/${id}/status`, 
+        `${API_URL}/api/video/${id}/status`,
         { status: newStatus },
         { headers }
       );
-      
-      setVideo(prev => ({ ...prev, status: newStatus }));
+
+      setVideo((prev) => ({ ...prev, status: newStatus }));
     } catch (err) {
-      console.error('Error updating status:', err);
+      console.error("Error updating status:", err);
       if (err.response?.status === 401 || err.response?.status === 403) {
-        setError('Your session has expired. Please log in again.');
-        router.push('/');
+        setError("Your session has expired. Please log in again.");
+        router.push("/");
       } else {
-        setError('Failed to update status. Please try again.');
+        setError("Failed to update status. Please try again.");
       }
     }
   };
@@ -255,22 +253,23 @@ export default function VideoPage() {
   const confirmGenerateSummary = async () => {
     setIsWarningDialogOpen(false);
     if (!video || isGeneratingSummary) return;
-    
+
     try {
       setIsGeneratingSummary(true);
-      setSummaryError('');
-      
-      const response = await axios.post(`${API_URL}/api/video/${id}/generate-summary`);
-      
-      setVideo(prev => ({
+      setSummaryError("");
+
+      const response = await axios.post(
+        `${API_URL}/api/video/${id}/generate-summary`
+      );
+
+      setVideo((prev) => ({
         ...prev,
         aiSummary: response.data.aiSummary,
-        aiSummaryGenerated: true
+        aiSummaryGenerated: true,
       }));
-      
     } catch (err) {
-      console.error('Error generating summary:', err);
-      setSummaryError(err.response?.data?.msg || 'Failed to generate summary');
+      console.error("Error generating summary:", err);
+      setSummaryError(err.response?.data?.msg || "Failed to generate summary");
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -278,66 +277,63 @@ export default function VideoPage() {
 
   const copySummaryToNotes = async () => {
     if (!video || !video.aiSummaryGenerated) return;
-    
+
     try {
-      setCopySuccess(false); // Reset success message
-      const response = await axios.post(`${API_URL}/api/video/${id}/summary-to-note`);
+      setCopySuccess(false);
+      const response = await axios.post(
+        `${API_URL}/api/video/${id}/summary-to-note`
+      );
       setNote(response.data.notes);
-      setVideo(prev => ({
+      setVideo((prev) => ({
         ...prev,
-        notes: response.data.notes
+        notes: response.data.notes,
       }));
       setNoteSaved(true);
-      setCopySuccess(true); // Show success message
-      
-      // Hide success message after 3 seconds
+      setCopySuccess(true);
+
       setTimeout(() => {
         setCopySuccess(false);
       }, 3000);
     } catch (err) {
-      console.error('Error copying summary to notes:', err);
+      console.error("Error copying summary to notes:", err);
     }
   };
 
-  // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'in-progress':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "in-progress":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
     }
   };
 
-  // Get status icon
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
-        return '🟢';
-      case 'in-progress':
-        return '🟡';
+      case "completed":
+        return "🟢";
+      case "in-progress":
+        return "🟡";
       default:
-        return '⚪️';
+        return "⚪️";
     }
   };
 
-  // Format status text
   const formatStatus = (status) => {
     switch (status) {
-      case 'completed':
-        return 'Completed';
-      case 'in-progress':
-        return 'In Progress';
-      case 'to-watch':
-        return 'To Watch';
+      case "completed":
+        return "Completed";
+      case "in-progress":
+        return "In Progress";
+      case "to-watch":
+        return "To Watch";
       default:
         return status;
     }
   };
 
-  // Update tags when video data is fetched
   useEffect(() => {
     if (video) {
       setTags(video.tags || []);
@@ -350,16 +346,15 @@ export default function VideoPage() {
 
   const handleResourcesUpdate = async (newResources) => {
     try {
-      setVideo(prev => ({
+      setVideo((prev) => ({
         ...prev,
-        resources: newResources
+        resources: newResources,
       }));
     } catch (err) {
-      console.error('Error updating resources:', err);
+      console.error("Error updating resources:", err);
     }
   };
 
-  // Update isCustomPlaylist when video data is fetched
   useEffect(() => {
     if (video) {
       setIsCustomPlaylist(video.isCustomPlaylist);
@@ -367,19 +362,27 @@ export default function VideoPage() {
   }, [video]);
 
   const handleRemoveFromPlaylist = async () => {
-    if (!window.confirm('Are you sure you want to remove this video from the playlist?')) {
+    if (
+      !window.confirm(
+        "Are you sure you want to remove this video from the playlist?"
+      )
+    ) {
       return;
     }
 
     setRemovingVideo(true);
     try {
-      const response = await axios.delete(`${API_URL}/api/video/${id}/remove-from-playlist`);
+      const response = await axios.delete(
+        `${API_URL}/api/video/${id}/remove-from-playlist`
+      );
       if (response.data.success) {
         router.push(`/playlist/${video.playlistId}`);
       }
     } catch (err) {
-      console.error('Error removing video:', err);
-      setError(err.response?.data?.msg || 'Failed to remove video from playlist');
+      console.error("Error removing video:", err);
+      setError(
+        err.response?.data?.msg || "Failed to remove video from playlist"
+      );
     } finally {
       setRemovingVideo(false);
     }
@@ -404,10 +407,12 @@ export default function VideoPage() {
         <Navbar />
         <div className="container mx-auto max-w-7xl px-4 py-16">
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Error</h2>
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
+              Error
+            </h2>
             <p className="text-gray-700 dark:text-gray-300">{error}</p>
-            <button 
-              onClick={() => router.push('/dashboard')} 
+            <button
+              onClick={() => router.push("/dashboard")}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
             >
               Return to Dashboard
@@ -424,10 +429,15 @@ export default function VideoPage() {
         <Navbar />
         <div className="container mx-auto max-w-7xl px-4 py-16">
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Video Not Found</h2>
-            <p className="text-gray-600 dark:text-gray-400">The video you're looking for doesn't exist or you don't have access to it.</p>
-            <button 
-              onClick={() => router.push('/dashboard')} 
+            <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Video Not Found
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              The video you're looking for doesn't exist or you don't have
+              access to it.
+            </p>
+            <button
+              onClick={() => router.push("/dashboard")}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
             >
               Return to Dashboard
@@ -446,12 +456,21 @@ export default function VideoPage() {
         <div className="mb-6">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
-              <button 
+              <button
                 onClick={() => router.push(`/playlist/${video.playlistId}`)}
                 className="text-blue-600 dark:text-blue-400 hover:underline flex items-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 Back to {video.playlistName}
               </button>
@@ -468,16 +487,43 @@ export default function VideoPage() {
               >
                 {removingVideo ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Removing...
                   </>
                 ) : (
                   <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
                     </svg>
                     Remove from Playlist
                   </>
@@ -485,20 +531,35 @@ export default function VideoPage() {
               </button>
             )}
           </div>
-          
+
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
             {video.title}
           </h1>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full flex items-center ${getStatusColor(video.status)}`}>
+            <span
+              className={`px-2.5 py-0.5 text-xs font-medium rounded-full flex items-center ${getStatusColor(
+                video.status
+              )}`}
+            >
               <span className="mr-1">{getStatusIcon(video.status)}</span>
               {formatStatus(video.status)}
             </span>
-            
+
             <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
               {formatMinutes(timeSpent)}
             </span>
@@ -535,41 +596,41 @@ export default function VideoPage() {
                 </h2>
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => updateStatus('to-watch')}
+                    onClick={() => updateStatus("to-watch")}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      video.status === 'to-watch'
-                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white'
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      video.status === "to-watch"
+                        ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white"
+                        : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                     }`}
                   >
                     To Watch
                   </button>
                   <button
-                    onClick={() => updateStatus('in-progress')}
+                    onClick={() => updateStatus("in-progress")}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      video.status === 'in-progress'
-                        ? 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      video.status === "in-progress"
+                        ? "bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                        : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                     }`}
                   >
                     In Progress
                   </button>
                   <button
-                    onClick={() => updateStatus('completed')}
+                    onClick={() => updateStatus("completed")}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      video.status === 'completed'
-                        ? 'bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200'
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      video.status === "completed"
+                        ? "bg-green-200 dark:bg-green-900 text-green-800 dark:text-green-200"
+                        : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                     }`}
                   >
                     Completed
                   </button>
                   <button
-                    onClick={() => updateStatus('rewatch')}
+                    onClick={() => updateStatus("rewatch")}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      video.status === 'rewatch'
-                        ? 'bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
-                        : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      video.status === "rewatch"
+                        ? "bg-purple-200 dark:bg-purple-900 text-purple-800 dark:text-purple-200"
+                        : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                     }`}
                   >
                     Need to Rewatch
@@ -584,28 +645,48 @@ export default function VideoPage() {
                     Time Tracker
                   </h2>
                   <div className="text-xl font-mono text-gray-800 dark:text-gray-200">
-                    {timerActive ? formatTimeDisplay(currentSessionTime) : '00:00'}
+                    {timerActive
+                      ? formatTimeDisplay(currentSessionTime)
+                      : "00:00"}
                   </div>
                 </div>
                 <button
                   onClick={toggleTimer}
                   className={`w-full py-3 px-4 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                     timerActive
-                      ? 'bg-red-600 hover:bg-red-700 text-white'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      ? "bg-red-600 hover:bg-red-700 text-white"
+                      : "bg-green-600 hover:bg-green-700 text-white"
                   }`}
                 >
                   {timerActive ? (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       Stop Timer
                     </>
                   ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       Start Timer
                     </>
@@ -645,13 +726,18 @@ export default function VideoPage() {
                     className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     title="Copy notes"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
                       <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
                   </button>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {noteSaved ? 'Saved' : 'Saving...'}
+                    {noteSaved ? "Saved" : "Saving..."}
                   </span>
                 </div>
               </div>
@@ -678,8 +764,8 @@ export default function VideoPage() {
                   disabled={isGeneratingSummary || video?.aiSummaryGenerated}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     isGeneratingSummary || video?.aiSummaryGenerated
-                      ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+                      ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800"
                   }`}
                 >
                   {isGeneratingSummary ? (
@@ -688,39 +774,53 @@ export default function VideoPage() {
                       <span className="ml-2">Generating...</span>
                     </span>
                   ) : video?.aiSummaryGenerated ? (
-                    'Summary Generated'
+                    "Summary Generated"
                   ) : (
-                    'Generate AI Summary'
+                    "Generate AI Summary"
                   )}
                 </button>
               </div>
-              
+
               {summaryError && (
                 <div className="mb-3 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm rounded-md">
                   {summaryError}
                 </div>
               )}
-              
+
               {copySuccess && (
                 <div className="mb-3 p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm rounded-md flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   Summary copied to notes!
                 </div>
               )}
-              
+
               {video.aiSummaryGenerated ? (
                 <>
                   <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap mb-3 max-h-[300px] overflow-y-auto">
                     {video.aiSummary}
                   </div>
-                  
+
                   <button
                     onClick={copySummaryToNotes}
                     className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
                       <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
                       <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                     </svg>
@@ -729,14 +829,15 @@ export default function VideoPage() {
                 </>
               ) : (
                 <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400 text-sm italic">
-                  No AI summary generated yet. Click "Generate Summary" to create one.
+                  No AI summary generated yet. Click "Generate Summary" to
+                  create one.
                 </div>
               )}
             </div>
 
             {/* Resources Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <ResourceManager 
+              <ResourceManager
                 videoId={video.id}
                 resources={video.resources || []}
                 onResourcesUpdate={handleResourcesUpdate}
@@ -745,17 +846,19 @@ export default function VideoPage() {
 
             {/* Tags */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Tags</h2>
-              <TagManager 
-                videoId={video.id} 
-                initialTags={tags} 
-                onTagsUpdate={handleTagsUpdate} 
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                Tags
+              </h2>
+              <TagManager
+                videoId={video.id}
+                initialTags={tags}
+                onTagsUpdate={handleTagsUpdate}
               />
             </div>
           </div>
         </div>
       </div>
-      
+
       <WarningDialog
         isOpen={isWarningDialogOpen}
         onClose={() => setIsWarningDialogOpen(false)}
@@ -765,4 +868,4 @@ export default function VideoPage() {
       />
     </div>
   );
-} 
+}

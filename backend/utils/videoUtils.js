@@ -1,4 +1,3 @@
-// Parse timestamps from video description
 const parseTimestamps = (description) => {
   if (!description) return [];
   

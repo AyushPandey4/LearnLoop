@@ -7,7 +7,7 @@ export default function DailyGoal({ dailyGoal, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Update local state when prop changes
+
   useEffect(() => {
     setGoal(dailyGoal || '');
   }, [dailyGoal]);
