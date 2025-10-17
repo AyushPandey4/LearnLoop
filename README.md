@@ -12,10 +12,10 @@ LearnLoop is a modern web application designed to help you track, organize, and 
 
 ---
 
-### 🎯 Badges
+### 📚 Playlist Page
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Badges.png" alt="Badges Feature" width="800">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Playlist.png" alt="Playlist Page" width="800">
 </p>
 
 ---
@@ -28,10 +28,10 @@ LearnLoop is a modern web application designed to help you track, organize, and 
 
 ---
 
-### 📚 Playlist Page
+### 🎯 Badges
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Playlist.png" alt="Playlist Page" width="800">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Badges.png" alt="Badges Feature" width="800">
 </p>
 
 ---
