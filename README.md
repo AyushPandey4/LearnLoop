@@ -2,6 +2,49 @@
 
 LearnLoop is a modern web application designed to help you track, organize, and enhance your learning journey through YouTube educational content. With powerful features for playlist management, progress tracking, and note-taking, LearnLoop makes your learning experience more structured and effective.
 
+## 🚀 Demo
+
+### 🖥️ Dashboard Page
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Dashboard.png" alt="Dashboard Page" width="800">
+</p>
+
+---
+
+### 🎯 Badges
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Badges.png" alt="Badges Feature" width="800">
+</p>
+
+---
+
+### 🎥 Video Section
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Video.png" alt="Video Feature" width="800">
+</p>
+
+---
+
+### 📚 Playlist Page
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/Playlist.png" alt="Playlist Page" width="800">
+</p>
+
+---
+
+### 🔍 Search by Tags
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AyushPandey4/LearnLoop/main/assets/SearchTags.png" alt="Search by Tags" width="800">
+</p>
+
+---
+
+
 ## ✨ Key Features
 
 ### 🔐 Authentication & Security

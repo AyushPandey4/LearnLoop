@@ -18,6 +18,11 @@ app.use(
   })
 );
 
+// Simple ping-pong endpoint
+app.get("/ping", (req, res) => {
+  res.json({ message: "pong" });
+});
+
 connectDB();
 
 connectRedis()
