@@ -269,7 +269,14 @@ export default function VideoPage() {
       }));
     } catch (err) {
       console.error("Error generating summary:", err);
-      setSummaryError(err.response?.data?.msg || "Failed to generate summary");
+      const errorCode = err.response?.data?.error;
+      if (errorCode === "NO_TRANSCRIPT" || errorCode === "TRANSCRIPT_FETCH_FAILED") {
+        setSummaryError(
+          "This video doesn't have captions available. AI summary requires YouTube captions to be enabled on the video."
+        );
+      } else {
+        setSummaryError(err.response?.data?.msg || "Failed to generate summary");
+      }
     } finally {
       setIsGeneratingSummary(false);
     }
